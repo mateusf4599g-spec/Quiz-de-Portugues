@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz de Português</title>
+
+<style>
+/* ==========================
+   ESTILO GERAL
+========================== */
+body{
+  font-family:Arial;
+  background:#0f172a;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  margin:0;
+  padding:15px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.container{
+  background:#1e293b;
+  padding:25px;
+  border-radius:12px;
+  width:95%;
+  max-width:600px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.3);
+}
+
+h1,h2{text-align:center;}
+
+/* BOTÕES DE MATÉRIA/ASSUNTO */
+.temaBtn{
+  background:#111827;
+  padding:16px;
+  margin:10px 0;
+  border-radius:8px;
+  cursor:pointer;
+  text-align:center;
+  font-size:22px;
+  border:3px solid #1f2937;
+  user-select:none;
+  touch-action:manipulation;
+}
+
+.selecionadaMenu{
+  background:#1d4ed8 !important;
+  border:3px solid #60a5fa !important;
+}
+
+/* BARRA DE PROGRESSO DO ASSUNTO */
+.progressoAssunto{
+  height:8px;
+  background:#1f2937;
+  border-radius:6px;
+  margin-top:6px;
+}
+
+.barraInterna{
+  height:8px;
+  background:#22c55e;
+  border-radius:6px;
+}
+
+/* PERGUNTAS E OPÇÕES */
+.pergunta{
+  font-size:24px;
+  margin-bottom:20px;
+}
+
+.opcao{
+  background:#111827;
+  padding:16px;
+  margin:10px 0;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:20px;
+  border:3px solid #1f2937;
+}
+
+.selecionada{background:#1d4ed8 !important;border:3px solid #60a5fa !important;}
+.correta{background:#16a34a !important;border:3px solid #4ade80;}
+.errada{background:#dc2626 !important;border:3px solid #f87171;}
+
+/* BOTOES GERAIS */
+button{
+  margin-top:15px;
+  padding:14px;
+  width:100%;
+  border:none;
+  background:#2563eb;
+  color:white;
+  border-radius:8px;
+  font-size:18px;
+  cursor:pointer;
+}
+
+/* INPUT PARA NOME */
+input{
+  width:100%;
+  padding:12px;
+  border-radius:8px;
+  border:none;
+  margin-top:10px;
+  font-size:18px;
+}
+
+/* BARRA DE PROGRESSO GERAL DO QUIZ */
+#barra{
+  height:12px;
+  background:#1f2937;
+  border-radius:10px;
+  margin-bottom:20px;
+  overflow:hidden;
+}
+
+#progresso{
+  height:12px;
+  background:#3b82f6;
+  width:0%;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div class="container" id="login">
+<h1>Quiz de Português</h1>
+<p>Digite seu nome para salvar seu progresso</p>
+<input id="nomeUsuario" placeholder="Seu nome">
+<button id="btnEntrar">Entrar</button>
+</div>
+
+<!-- MENU DE MATÉRIAS -->
+<div class="container" id="menu" style="display:none"></div>
+
+<!-- TELA DE QUIZ -->
+<div class="container" id="quiz" style="display:none">
+<h1>Quiz de Português</h1>
+<div id="barra"><div id="progresso"></div></div>
+<div id="placar"></div>
+<div id="tema"></div>
+<div class="pergunta" id="pergunta"></div>
+
+<div class="opcao" id="op0"></div>
+<div class="opcao" id="op1"></div>
+<div class="opcao" id="op2"></div>
+<div class="opcao" id="op3"></div>
+
+<div id="explicacao"></div>
+
+<button id="btnConfirmar">Confirmar</button>
+<button id="btnProxima" style="display:none">Próxima</button>
+<button id="btnVoltar">Voltar</button>
+</div>
+
+<script>
+// ==========================
+// CONFIGURAÇÕES E VARIÁVEIS
+// ==========================
+const QUIZ_ID = "quiz de PORTUGUÊS" // ID único do quiz
+let usuario=""
+let materiaSelecionada=null
+let assuntoSelecionado=null
+let opcaoSelecionada=null
+let perguntas=[]
+let atual=0
+let pontos=0
+let respondido=false
+let erros=[]
+
+
+// ==========================
+// BANCO DE PERGUNTAS
+// ==========================
+let banco=[
+
+
+{materia:"Português 6º Ano", assunto:"Gêneros textuais", pergunta:"\n\nQual gênero textual conta uma história curta com personagens e enredo?", opcoes:["Notícia","Poema","Conto","Tirinha"], correta:2, explicacao:"O conto é uma narrativa curta com personagens e enredo."},
+{materia:"Português 6º Ano", assunto:"Gêneros textuais", pergunta:"\n\nQual gênero textual apresenta uma moral no final da história?", opcoes:["Fábula","Notícia","Poema","Carta"], correta:0, explicacao:"A fábula é uma narrativa curta que traz uma moral ou ensinamento."},
+{materia:"Português 6º Ano", assunto:"Gêneros textuais", pergunta:"\n\nQual gênero textual usa desenhos e balões de fala para contar uma história?", opcoes:["Conto","Poema","Notícia","Tirinha"], correta:3, explicacao:"A tirinha utiliza imagens e balões de fala para contar a história."},
+{materia:"Português 6º Ano", assunto:"Gêneros textuais", pergunta:"\n\nQual gênero textual é escrito em versos e estrofes?", opcoes:["Poema","Notícia","Fábula","Conto"], correta:0, explicacao:"O poema é organizado em versos e estrofes."},
+{materia:"Português 6º Ano", assunto:"Gêneros textuais", pergunta:"\n\nQual gênero textual informa fatos reais do dia a dia?", opcoes:["Poema","Notícia","Conto","Fábula"], correta:1, explicacao:"A notícia informa fatos reais e atuais."},
+{materia:"Português 6º Ano", assunto:"Gêneros textuais", pergunta:"\n\nUma história com animais que falam e ensina uma lição é:", opcoes:["Notícia","Poema","Fábula","Tirinha"], correta:2, explicacao:"A fábula geralmente tem animais como personagens e traz uma moral."},
+{materia:"Português 6º Ano", assunto:"Gêneros textuais", pergunta:"\n\nUm texto curto com humor e desenhos é chamado de:", opcoes:["Conto","Tirinha","Poema","Notícia"], correta:1, explicacao:"A tirinha é um texto curto com humor e imagens."},
+{materia:"Português 6º Ano", assunto:"Gêneros textuais", pergunta:"\n\nQual gênero textual tem como objetivo informar a população?", opcoes:["Fábula","Poema","Notícia","Conto"], correta:2, explicacao:"A notícia tem o objetivo de informar."},
+{materia:"Português 6º Ano", assunto:"Gêneros textuais", pergunta:"\n\nTexto com rimas e ritmo é geralmente um:", opcoes:["Poema","Notícia","Tirinha","Fábula"], correta:0, explicacao:"O poema pode ter rimas e ritmo."},
+{materia:"Português 6º Ano", assunto:"Gêneros textuais", pergunta:"\n\nHistória inventada com personagens e acontecimentos imaginários é:", opcoes:["Notícia","Conto","Poema","Reportagem"], correta:1, explicacao:"O conto é uma narrativa fictícia com personagens e acontecimentos imaginários, geralmente curta e com enredo."},
+
+{materia:"Português 6º Ano", assunto:"Substantivo", pergunta:"\n\nSubstantivo é a palavra que:", opcoes:["Indica ação","Nomeia seres","Indica qualidade","Liga palavras"], correta:1, explicacao:"Substantivo é a palavra que nomeia seres, objetos, lugares ou sentimentos."},
+{materia:"Português 6º Ano", assunto:"Substantivo", pergunta:"\n\nQual das palavras abaixo é um substantivo?", opcoes:["Correr","Bonito","Casa","Rapidamente"], correta:2, explicacao:"Casa é um substantivo porque nomeia um lugar."},
+{materia:"Português 6º Ano", assunto:"Substantivo", pergunta:"\n\nQual é um substantivo próprio?", opcoes:["Cidade","Menino","Brasil","Rua"], correta:2, explicacao:"Brasil é um substantivo próprio porque nomeia um lugar específico."},
+{materia:"Português 6º Ano", assunto:"Substantivo", pergunta:"\n\nSubstantivo comum é aquele que:", opcoes:["Nomeia algo específico","Nomeia algo em geral","Indica ação","Indica qualidade"], correta:1, explicacao:"Substantivo comum nomeia seres de forma geral."},
+{materia:"Português 6º Ano", assunto:"Substantivo", pergunta:"\n\nQual palavra é um substantivo coletivo?", opcoes:["Boi","Gado","Animal","Campo"], correta:1, explicacao:"Gado é o coletivo que indica um conjunto de bois."},
+{materia:"Português 6º Ano", assunto:"Substantivo", pergunta:"\n\nQual alternativa apresenta apenas substantivo?", opcoes:["Casa e mesa","Bonito e alto","Correr e pular","Rapidamente e ontem"], correta:0, explicacao:"Casa e mesa são substantivos."},
+{materia:"Português 6º Ano", assunto:"Substantivo", pergunta:"\n\nSubstantivo próprio deve ser escrito:", opcoes:["Com letra minúscula","Com letra maiúscula","Sem acento","Sem plural"], correta:1, explicacao:"Substantivo próprio é escrito com letra maiúscula."},
+{materia:"Português 6º Ano", assunto:"Substantivo", pergunta:"\n\nQual é um substantivo de lugar?", opcoes:["Escola","Correr","Bonito","Rápido"], correta:0, explicacao:"Escola nomeia um lugar."},
+{materia:"Português 6º Ano", assunto:"Substantivo", pergunta:"\n\nA palavra 'felicidade' é:", opcoes:["Verbo","Adjetivo","Substantivo","Artigo"], correta:2, explicacao:"Felicidade nomeia um sentimento, portanto é substantivo."},
+{materia:"Português 6º Ano", assunto:"Substantivo", pergunta:"\n\nQual alternativa apresenta substantivo próprio?", opcoes:["Cachorro","Rio","João","Cidade"], correta:2, explicacao:"João é um nome próprio."},
+
+{materia:"Português 6º Ano", assunto:"Adjetivo", pergunta:"\nAdjetivo é a palavra que:", opcoes:["Nomeia seres","Indica ação","Caracteriza o substantivo","Liga palavras"], correta:2, explicacao:"Adjetivo é a palavra que caracteriza o substantivo."},
+{materia:"Português 6º Ano", assunto:"Adjetivo", pergunta:"\nNa frase 'Casa bonita', a palavra bonita é:", opcoes:["Substantivo","Adjetivo","Verbo","Artigo"], correta:1, explicacao:"Bonita caracteriza a casa, portanto é adjetivo."},
+{materia:"Português 6º Ano", assunto:"Adjetivo", pergunta:"\nQual palavra é um adjetivo?", opcoes:["Correr","Azul","Mesa","Escola"], correta:1, explicacao:"Azul caracteriza algo, então é adjetivo."},
+{materia:"Português 6º Ano", assunto:"Adjetivo", pergunta:"\nNa frase 'Menino inteligente', inteligente é:", opcoes:["Verbo","Substantivo","Adjetivo","Artigo"], correta:2, explicacao:"Inteligente caracteriza o menino."},
+{materia:"Português 6º Ano", assunto:"Adjetivo", pergunta:"\nAdjetivo serve para:", opcoes:["Indicar ação","Nomear seres","Caracterizar seres","Ligar palavras"], correta:2, explicacao:"O adjetivo caracteriza o substantivo."},
+{materia:"Português 6º Ano", assunto:"Adjetivo", pergunta:"\nQual alternativa apresenta adjetivo?", opcoes:["Casa","Bonito","Correr","Livro"], correta:1, explicacao:"Bonito é adjetivo."},
+{materia:"Português 6º Ano", assunto:"Adjetivo", pergunta:"\nNa frase 'Carro rápido', rápido é:", opcoes:["Substantivo","Verbo","Adjetivo","Pronome"], correta:2, explicacao:"Rápido caracteriza o carro."},
+{materia:"Português 6º Ano", assunto:"Adjetivo", pergunta:"\nA palavra 'feliz' é:", opcoes:["Adjetivo","Verbo","Substantivo","Artigo"], correta:0, explicacao:"Feliz caracteriza uma pessoa ou coisa."},
+{materia:"Português 6º Ano", assunto:"Adjetivo", pergunta:"\nQual frase tem adjetivo?", opcoes:["O menino corre","A casa é grande","Ele pulou","Ela saiu"], correta:1, explicacao:"Grande é adjetivo."},
+{materia:"Português 6º Ano", assunto:"Adjetivo", pergunta:"\nAdjetivo concorda com:", opcoes:["Verbo","Substantivo","Pronome","Artigo"], correta:1, explicacao:"O adjetivo concorda com o substantivo em gênero e número."},
+
+{materia:"Português 6º Ano", assunto:"Artigo", pergunta:"\nArtigo é a palavra que acompanha o:", opcoes:["Verbo","Substantivo","Adjetivo","Advérbio"], correta:1, explicacao:"O artigo acompanha o substantivo."},
+{materia:"Português 6º Ano", assunto:"Artigo", pergunta:"\nNa frase 'O menino correu', a palavra 'o' é:", opcoes:["Pronome","Verbo","Artigo","Adjetivo"], correta:2, explicacao:"O acompanha o substantivo menino, portanto é artigo."},
+{materia:"Português 6º Ano", assunto:"Artigo", pergunta:"\nQual alternativa apresenta um artigo?", opcoes:["Casa","Bonito","O","Correr"], correta:2, explicacao:"O é um artigo definido."},
+{materia:"Português 6º Ano", assunto:"Artigo", pergunta:"\nOs artigos definidos são:", opcoes:["Um, uma, uns, umas","O, a, os, as","Meu, minha","Este, essa"], correta:1, explicacao:"O, a, os e as são artigos definidos."},
+{materia:"Português 6º Ano", assunto:"Artigo", pergunta:"\nOs artigos indefinidos são:", opcoes:["O, a","Este, esse","Um, uma, uns, umas","Meu, tua"], correta:2, explicacao:"Um, uma, uns e umas são artigos indefinidos."},
+{materia:"Português 6º Ano", assunto:"Artigo", pergunta:"\nNa frase 'Uma menina chegou', a palavra uma é:", opcoes:["Artigo","Pronome","Verbo","Adjetivo"], correta:0, explicacao:"Uma acompanha o substantivo menina."},
+{materia:"Português 6º Ano", assunto:"Artigo", pergunta:"\nArtigo serve para:", opcoes:["Indicar ação","Caracterizar o verbo","Determinar o substantivo","Ligar frases"], correta:2, explicacao:"O artigo determina o substantivo."},
+{materia:"Português 6º Ano", assunto:"Artigo", pergunta:"\nQual frase tem artigo?", opcoes:["Menino correu","Casa bonita","O cachorro latiu","Corre rápido"], correta:2, explicacao:"O é artigo."},
+{materia:"Português 6º Ano", assunto:"Artigo", pergunta:"\nA palavra 'as' é:", opcoes:["Pronome","Artigo","Verbo","Adjetivo"], correta:1, explicacao:"As é artigo definido."},
+{materia:"Português 6º Ano", assunto:"Artigo", pergunta:"\nArtigos concordam com:", opcoes:["Verbo","Substantivo","Advérbio","Preposição"], correta:1, explicacao:"Artigos concordam com o substantivo em gênero e número."},
+
+{materia:"Português 6º Ano", assunto:"Pronome", pergunta:"\nPronome é a palavra que:", opcoes:["Indica ação","Substitui ou acompanha o substantivo","Caracteriza o substantivo","Liga palavras"], correta:1, explicacao:"Pronome substitui ou acompanha o substantivo."},
+{materia:"Português 6º Ano", assunto:"Pronome", pergunta:"\nNa frase 'Ele correu', a palavra ele é:", opcoes:["Substantivo","Pronome","Verbo","Adjetivo"], correta:1, explicacao:"Ele substitui o nome de uma pessoa, sendo pronome."},
+{materia:"Português 6º Ano", assunto:"Pronome", pergunta:"\nQual alternativa apresenta um pronome?", opcoes:["Casa","Bonito","Meu","Correr"], correta:2, explicacao:"Meu é pronome possessivo."},
+{materia:"Português 6º Ano", assunto:"Pronome", pergunta:"\nOs pronomes pessoais são:", opcoes:["Meu, teu","Este, esse","Eu, tu, ele","Um, uma"], correta:2, explicacao:"Eu, tu e ele são pronomes pessoais."},
+{materia:"Português 6º Ano", assunto:"Pronome", pergunta:"\nNa frase 'Minha casa é bonita', a palavra minha é:", opcoes:["Pronome","Verbo","Substantivo","Artigo"], correta:0, explicacao:"Minha indica posse, sendo pronome possessivo."},
+{materia:"Português 6º Ano", assunto:"Pronome", pergunta:"\nPronome serve para:", opcoes:["Indicar tempo","Substituir o substantivo","Caracterizar o verbo","Indicar ação"], correta:1, explicacao:"Pronome substitui ou acompanha o substantivo."},
+{materia:"Português 6º Ano", assunto:"Pronome", pergunta:"\nA palavra 'este' é um:", opcoes:["Verbo","Substantivo","Pronome","Adjetivo"], correta:2, explicacao:"Este é pronome demonstrativo."},
+{materia:"Português 6º Ano", assunto:"Pronome", pergunta:"\nQual frase tem pronome?", opcoes:["Menino correu","Ele chegou cedo","Casa bonita","Corre rápido"], correta:1, explicacao:"Ele é pronome."},
+{materia:"Português 6º Ano", assunto:"Pronome", pergunta:"\nOs pronomes possessivos indicam:", opcoes:["Ação","Lugar","Posse","Tempo"], correta:2, explicacao:"Pronomes possessivos indicam posse."},
+{materia:"Português 6º Ano", assunto:"Pronome", pergunta:"\nA palavra 'aquilo' é:", opcoes:["Pronome","Verbo","Substantivo","Artigo"], correta:0, explicacao:"Aquilo é pronome demonstrativo."},
+
+{materia:"Português 6º Ano", assunto:"Verbo", pergunta:"\nVerbo é a palavra que indica:", opcoes:["Seres","Ação, estado ou fenômeno","Qualidade","Ligação"], correta:1, explicacao:"Verbo indica ação, estado ou fenômeno da natureza."},
+{materia:"Português 6º Ano", assunto:"Verbo", pergunta:"\nNa frase 'João correu', a palavra correu é:", opcoes:["Substantivo","Adjetivo","Verbo","Artigo"], correta:2, explicacao:"Correu indica uma ação, portanto é verbo."},
+{materia:"Português 6º Ano", assunto:"Verbo", pergunta:"\nQual alternativa apresenta um verbo?", opcoes:["Casa","Bonito","Correr","Mesa"], correta:2, explicacao:"Correr é um verbo."},
+{materia:"Português 6º Ano", assunto:"Verbo", pergunta:"\nO verbo indica principalmente:", opcoes:["Lugar","Tempo","Ação","Nome"], correta:2, explicacao:"O verbo indica principalmente ação, mas também pode indicar estado ou fenômeno da natureza."},
+{materia:"Português 6º Ano", assunto:"Verbo", pergunta:"\nNa frase 'Ela estuda muito', estuda é:", opcoes:["Verbo","Substantivo","Pronome","Artigo"], correta:0, explicacao:"Estuda indica ação."},
+{materia:"Português 6º Ano", assunto:"Verbo", pergunta:"\nOs tempos verbais são:", opcoes:["Masculino e feminino","Singular e plural","Presente, passado e futuro","Curto e longo"], correta:2, explicacao:"Os principais tempos são presente, passado e futuro."},
+{materia:"Português 6º Ano", assunto:"Verbo", pergunta:"\nQual frase tem verbo?", opcoes:["Casa bonita","Menino feliz","O aluno corre","Mesa grande"], correta:2, explicacao:"Corre é verbo."},
+{materia:"Português 6º Ano", assunto:"Verbo", pergunta:"\nA palavra 'cantando' é:", opcoes:["Substantivo","Adjetivo","Verbo","Artigo"], correta:2, explicacao:"Cantando vem do verbo cantar."},
+{materia:"Português 6º Ano", assunto:"Verbo", pergunta:"\nVerbo concorda com:", opcoes:["Artigo","Substantivo","Sujeito","Adjetivo"], correta:2, explicacao:"O verbo concorda com o sujeito."},
+{materia:"Português 6º Ano", assunto:"Verbo", pergunta:"\nNa frase 'Nós estudaremos amanhã', estudaremos está no:", opcoes:["Passado","Presente","Futuro","Imperativo"], correta:2, explicacao:"Estudaremos indica ação futura."},
+
+{materia:"Português 6º Ano", assunto:"Ortografia básica", pergunta:"\nQual palavra está escrita corretamente?", opcoes:["Caza","Casa","Kaza","Cassa"], correta:1, explicacao:"Casa é a forma correta."},
+{materia:"Português 6º Ano", assunto:"Ortografia básica", pergunta:"\nQual alternativa está correta?", opcoes:["Escola","Iscola","Escolaa","Eskola"], correta:0, explicacao:"Escola é a grafia correta."},
+{materia:"Português 6º Ano", assunto:"Ortografia básica", pergunta:"\nQual palavra está correta?", opcoes:["Fasenda","Fazenda","Fazendae","Fazemda"], correta:1, explicacao:"Fazenda é escrita com Z."},
+{materia:"Português 6º Ano", assunto:"Ortografia básica", pergunta:"\nQual palavra está escrita corretamente?", opcoes:["Xocolate","Chokolate","Chocolate","Chocollate"], correta:2, explicacao:"Chocolate é a forma correta."},
+{materia:"Português 6º Ano", assunto:"Ortografia básica", pergunta:"\nQual alternativa está correta?", opcoes:["Genti","Gente","Jente","Gentee"], correta:1, explicacao:"Gente é a grafia correta."},
+{materia:"Português 6º Ano", assunto:"Ortografia básica", pergunta:"\nQual palavra está correta?", opcoes:["Janela","Chanela","Xanela","Jannela"], correta:0, explicacao:"Janela é escrita com J."},
+{materia:"Português 6º Ano", assunto:"Ortografia básica", pergunta:"\nQual alternativa está correta?", opcoes:["Caderno","Kaderno","Cadernu","Caderna"], correta:0, explicacao:"Caderno é a forma correta."},
+{materia:"Português 6º Ano", assunto:"Ortografia básica", pergunta:"\nQual palavra está escrita corretamente?", opcoes:["Professor","Profesoor","Profesorr","Profeçor"], correta:0, explicacao:"Professor é a grafia correta."},
+{materia:"Português 6º Ano", assunto:"Ortografia básica", pergunta:"\nQual alternativa está correta?", opcoes:["Muinto","Muito","Muintoo","Muto"], correta:1, explicacao:"Muito é a forma correta."},
+{materia:"Português 6º Ano", assunto:"Ortografia básica", pergunta:"\nQual palavra está correta?", opcoes:["Cidade","Sidade","Cidadi","Cidede"], correta:0, explicacao:"Cidade é a grafia correta."},
+
+{materia:"Português 6º Ano", assunto:"Pontuação básica", pergunta:"\nQual pontuação usamos no final de uma frase afirmativa?", opcoes:["Ponto final","Vírgula","Interrogação","Exclamação"], correta:0, explicacao:"Frases afirmativas terminam com ponto final."},
+{materia:"Português 6º Ano", assunto:"Pontuação básica", pergunta:"\nQual sinal indica pergunta?", opcoes:["Ponto final","Vírgula","Interrogação","Dois pontos"], correta:2, explicacao:"O ponto de interrogação indica pergunta."},
+{materia:"Português 6º Ano", assunto:"Pontuação básica", pergunta:"\nQual pontuação usamos para demonstrar emoção?", opcoes:["Vírgula","Exclamação","Ponto final","Interrogação"], correta:1, explicacao:"O ponto de exclamação indica emoção."},
+{materia:"Português 6º Ano", assunto:"Pontuação básica", pergunta:"\nA vírgula serve para:", opcoes:["Terminar frases","Separar elementos","Fazer pergunta","Indicar emoção"], correta:1, explicacao:"A vírgula separa palavras ou elementos na frase."},
+{materia:"Português 6º Ano", assunto:"Pontuação básica", pergunta:"\nQual frase está correta?", opcoes:["Você vai hoje.","Você vai hoje?","Você vai hoje!","Todas estão corretas"], correta:3, explicacao:"Cada frase pode usar pontuação diferente dependendo da intenção."},
+{materia:"Português 6º Ano", assunto:"Pontuação básica", pergunta:"\nQual pontuação indica surpresa?", opcoes:["Ponto final","Vírgula","Exclamação","Dois pontos"], correta:2, explicacao:"A exclamação indica surpresa ou emoção."},
+{materia:"Português 6º Ano", assunto:"Pontuação básica", pergunta:"\nQual sinal usamos para separar itens?", opcoes:["Interrogação","Exclamação","Vírgula","Ponto final"], correta:2, explicacao:"A vírgula separa itens."},
+{materia:"Português 6º Ano", assunto:"Pontuação básica", pergunta:"\nQual pontuação termina uma frase?", opcoes:["Ponto final","Vírgula","Dois pontos","Travessão"], correta:0, explicacao:"O ponto final encerra a frase."},
+{materia:"Português 6º Ano", assunto:"Pontuação básica", pergunta:"\nQual frase é uma pergunta?", opcoes:["Ele chegou cedo.","Ele chegou cedo!","Ele chegou cedo?","Ele chegou cedo,"], correta:2, explicacao:"A interrogação indica pergunta."},
+{materia:"Português 6º Ano", assunto:"Pontuação básica", pergunta:"\nO ponto de exclamação indica:", opcoes:["Pergunta","Separação","Emoção","Fim de frase apenas"], correta:2, explicacao:"A exclamação indica emoção ou surpresa."},
+
+{materia:"Português 6º Ano", assunto:"Sinônimos e antônimos", pergunta:"\nSinônimo é uma palavra que tem:", opcoes:["Significado oposto","Significado igual ou parecido","Som diferente","Letra diferente"], correta:1, explicacao:"Sinônimo é uma palavra com significado igual ou semelhante."},
+{materia:"Português 6º Ano", assunto:"Sinônimos e antônimos", pergunta:"\nAntônimo é uma palavra que tem:", opcoes:["Significado contrário","Significado igual","Som parecido","Mesma escrita"], correta:0, explicacao:"Antônimo é uma palavra com significado contrário."},
+{materia:"Português 6º Ano", assunto:"Sinônimos e antônimos", pergunta:"\nO sinônimo de feliz é:", opcoes:["Triste","Alegre","Bravo","Cansado"], correta:1, explicacao:"Alegre tem significado semelhante a feliz."},
+{materia:"Português 6º Ano", assunto:"Sinônimos e antônimos", pergunta:"\nO antônimo de grande é:", opcoes:["Alto","Pequeno","Largo","Forte"], correta:1, explicacao:"Pequeno é o contrário de grande."},
+{materia:"Português 6º Ano", assunto:"Sinônimos e antônimos", pergunta:"\nO sinônimo de rápido é:", opcoes:["Devagar","Lento","Veloz","Fraco"], correta:2, explicacao:"Veloz tem significado parecido com rápido."},
+{materia:"Português 6º Ano", assunto:"Sinônimos e antônimos", pergunta:"\nO antônimo de quente é:", opcoes:["Frio","Quente","Morno","Fervendo"], correta:0, explicacao:"Frio é o contrário de quente."},
+{materia:"Português 6º Ano", assunto:"Sinônimos e antônimos", pergunta:"\nO sinônimo de bonito é:", opcoes:["Feio","Belo","Ruim","Sujo"], correta:1, explicacao:"Belo é sinônimo de bonito."},
+{materia:"Português 6º Ano", assunto:"Sinônimos e antônimos", pergunta:"\nO antônimo de alto é:", opcoes:["Baixo","Grande","Forte","Largo"], correta:0, explicacao:"Baixo é o contrário de alto."},
+{materia:"Português 6º Ano", assunto:"Sinônimos e antônimos", pergunta:"\nQual é o sinônimo de casa?", opcoes:["Lar","Rua","Cidade","Escola"], correta:0, explicacao:"Lar é sinônimo de casa."},
+{materia:"Português 6º Ano", assunto:"Sinônimos e antônimos", pergunta:"\nO antônimo de claro é:", opcoes:["Branco","Escuro","Azul","Limpo"], correta:1, explicacao:"Escuro é o contrário de claro."},
+
+{materia:"Português 6º Ano", assunto:"Acentuação básica", pergunta:"\nQual palavra está acentuada corretamente?", opcoes:["Cafe","Café","Cafee","Cafê"], correta:1, explicacao:"Café é acentuado corretamente com acento agudo."},
+{materia:"Português 6º Ano", assunto:"Acentuação básica", pergunta:"\nQual palavra tem acento?", opcoes:["Mesa","Lapis","Lápis","Casa"], correta:2, explicacao:"Lápis tem acento."},
+{materia:"Português 6º Ano", assunto:"Acentuação básica", pergunta:"\nQual alternativa está correta?", opcoes:["Voce","Você","Voçe","Vose"], correta:1, explicacao:"Você é a forma correta."},
+{materia:"Português 6º Ano", assunto:"Acentuação básica", pergunta:"\nA palavra 'pássaro' tem:", opcoes:["Sem acento","Um acento","Dois acentos","Três acentos"], correta:2, explicacao:"Pássaro possui dois acentos."},
+{materia:"Português 6º Ano", assunto:"Acentuação básica", pergunta:"\nQual palavra está correta?", opcoes:["Arvore","Árvore","Arvóre","Arvoree"], correta:1, explicacao:"Árvore é a forma correta."},
+{materia:"Português 6º Ano", assunto:"Acentuação básica", pergunta:"\nQual alternativa tem acento agudo?", opcoes:["Avó","Avô","Avo","Avuo"], correta:0, explicacao:"Avó tem acento agudo."},
+{materia:"Português 6º Ano", assunto:"Acentuação básica", pergunta:"\nQual palavra está correta?", opcoes:["Onibus","Ônibus","Oníbus","Onibús"], correta:1, explicacao:"Ônibus é a forma correta."},
+{materia:"Português 6º Ano", assunto:"Acentuação básica", pergunta:"\nA palavra 'céu' tem:", opcoes:["Sem acento","Acento agudo","Acento circunflexo","Til"], correta:1, explicacao:"Céu tem acento agudo."},
+{materia:"Português 6º Ano", assunto:"Acentuação básica", pergunta:"\nQual palavra está correta?", opcoes:["Ja","Já","Jaa","Jâ"], correta:1, explicacao:"Já é a forma correta."},
+{materia:"Português 6º Ano", assunto:"Acentuação básica", pergunta:"\nQual alternativa está correta?", opcoes:["Pao","Pão","Paõ","Pãu"], correta:1, explicacao:"Pão é a forma correta com til."},
+
+{materia:"Português 6º Ano", assunto:"Produção de texto simples", pergunta:"\nUm texto precisa ter começo, meio e:", opcoes:["Fim","Título","Autor","Desenho"], correta:0, explicacao:"Todo texto deve ter começo, meio e fim."},
+{materia:"Português 6º Ano", assunto:"Produção de texto simples", pergunta:"\nAntes de escrever um texto devemos:", opcoes:["Rasgar o papel","Pensar no assunto","Apagar tudo","Copiar outro texto"], correta:1, explicacao:"É importante pensar no tema antes de escrever."},
+{materia:"Português 6º Ano", assunto:"Produção de texto simples", pergunta:"\nUm bom texto deve ser:", opcoes:["Confuso","Organizado","Sem pontuação","Sem sentido"], correta:1, explicacao:"O texto deve ser organizado e claro."},
+{materia:"Português 6º Ano", assunto:"Produção de texto simples", pergunta:"\nO título do texto serve para:", opcoes:["Apagar o texto","Mostrar o assunto","Enfeitar apenas","Substituir o texto"], correta:1, explicacao:"O título indica o assunto do texto."},
+{materia:"Português 6º Ano", assunto:"Produção de texto simples", pergunta:"\nParágrafo é:", opcoes:["Uma letra","Um conjunto de frases","Um número","Um desenho"], correta:1, explicacao:"Parágrafo é um conjunto de frases que formam uma ideia."},
+{materia:"Português 6º Ano", assunto:"Produção de texto simples", pergunta:"\nUm texto precisa ter:", opcoes:["Coerência","Bagunça","Erros","Falta de sentido"], correta:0, explicacao:"Um texto deve ter coerência e sentido."},
+{materia:"Português 6º Ano", assunto:"Produção de texto simples", pergunta:"\nEscrever bem significa:", opcoes:["Escrever sem pensar","Organizar ideias","Escrever rápido","Copiar tudo"], correta:1, explicacao:"Organizar ideias ajuda na escrita."},
+{materia:"Português 6º Ano", assunto:"Produção de texto simples", pergunta:"\nQual é importante em um texto?", opcoes:["Pontuação correta","Erros de escrita","Falta de parágrafo","Palavras aleatórias"], correta:0, explicacao:"Pontuação correta ajuda na compreensão."},
+{materia:"Português 6º Ano", assunto:"Produção de texto simples", pergunta:"\nUm texto claro é aquele que:", opcoes:["Ninguém entende","Tem sentido","Não tem pontuação","É confuso"], correta:1, explicacao:"Texto claro é fácil de entender."},
+{materia:"Português 6º Ano", assunto:"Produção de texto simples", pergunta:"\nRevisar o texto significa:", opcoes:["Apagar tudo","Ler e corrigir","Desenhar","Parar de escrever"], correta:1, explicacao:"Revisar é ler novamente e corrigir erros."},
+
+{materia:"Português 7º Ano", assunto:"Classes gramaticais", pergunta:"\nClasses gramaticais são:", opcoes:["Tipos de textos","Categorias de palavras","Tipos de frases","Regras de pontuação"], correta:1, explicacao:"Classes gramaticais são categorias que organizam as palavras da língua."},
+{materia:"Português 7º Ano", assunto:"Classes gramaticais", pergunta:"\nQual alternativa apresenta apenas classes gramaticais?", opcoes:["Casa, mesa, livro","Substantivo, verbo, adjetivo","Bonito, correr, feliz","João, Brasil, escola"], correta:1, explicacao:"Substantivo, verbo e adjetivo são classes gramaticais."},
+{materia:"Português 7º Ano", assunto:"Classes gramaticais", pergunta:"\nO substantivo pertence a qual grupo?", opcoes:["Classes gramaticais","Tipos de texto","Pontuação","Acentuação"], correta:0, explicacao:"Substantivo é uma classe gramatical."},
+{materia:"Português 7º Ano", assunto:"Classes gramaticais", pergunta:"\nVerbo é uma classe gramatical que indica:", opcoes:["Nome","Qualidade","Ação ou estado","Lugar"], correta:2, explicacao:"Verbo indica ação, estado ou fenômeno."},
+{materia:"Português 7º Ano", assunto:"Classes gramaticais", pergunta:"\nQual palavra é um adjetivo?", opcoes:["Correr","Bonito","Casa","Rapidamente"], correta:1, explicacao:"Bonito é adjetivo."},
+{materia:"Português 7º Ano", assunto:"Classes gramaticais", pergunta:"\nPronome é uma classe gramatical que:", opcoes:["Indica ação","Substitui o substantivo","Caracteriza o verbo","Liga frases"], correta:1, explicacao:"Pronome substitui ou acompanha o substantivo."},
+{materia:"Português 7º Ano", assunto:"Classes gramaticais", pergunta:"\nArtigo é a classe que:", opcoes:["Acompanha o substantivo","Indica ação","Liga frases","Indica tempo"], correta:0, explicacao:"Artigo acompanha o substantivo."},
+{materia:"Português 7º Ano", assunto:"Classes gramaticais", pergunta:"\nQual alternativa apresenta um verbo?", opcoes:["Casa","Mesa","Estudar","Bonito"], correta:2, explicacao:"Estudar é verbo."},
+{materia:"Português 7º Ano", assunto:"Classes gramaticais", pergunta:"\nAdvérbio é a palavra que indica:", opcoes:["Nome","Ação","Circunstância","Pessoa"], correta:2, explicacao:"Advérbio indica circunstância."},
+{materia:"Português 7º Ano", assunto:"Classes gramaticais", pergunta:"\nPreposição é usada para:", opcoes:["Indicar ação","Ligar palavras","Caracterizar substantivo","Substituir nome"], correta:1, explicacao:"Preposição liga palavras na frase."},
+
+{materia:"Português 7º Ano", assunto:"Classes Gramaticais II", pergunta:"\nNa frase 'O menino correu rapidamente', a palavra 'rapidamente' é:", opcoes:["Adjetivo","Advérbio","Substantivo","Verbo"], correta:1, explicacao:"A palavra 'rapidamente' modifica o verbo 'correu', indicando modo, portanto é um advérbio."},
+{materia:"Português 7º Ano", assunto:"Classes Gramaticais II", pergunta:"\nNa frase 'Minha casa é grande', a palavra 'casa' é:", opcoes:["Substantivo","Adjetivo","Pronome","Verbo"], correta:0, explicacao:"A palavra 'casa' nomeia um lugar, portanto é um substantivo."},
+{materia:"Português 7º Ano", assunto:"Classes Gramaticais II", pergunta:"\nNa frase 'Eles estudaram muito ontem', a palavra 'estudaram' é:", opcoes:["Substantivo","Adjetivo","Advérbio","Verbo"], correta:3, explicacao:"A palavra 'estudaram' indica ação praticada pelos sujeitos, sendo um verbo."},
+{materia:"Português 7º Ano", assunto:"Classes Gramaticais II", pergunta:"\nNa frase 'Aquele livro é interessante', a palavra 'aquele' é:", opcoes:["Substantivo","Pronome","Adjetivo","Verbo"], correta:1, explicacao:"A palavra 'aquele' é um pronome demonstrativo, pois indica e acompanha o substantivo 'livro'."},
+{materia:"Português 7º Ano", assunto:"Classes Gramaticais II", pergunta:"\nNa frase 'Eu comprei um caderno novo', a palavra 'novo' é:", opcoes:["Substantivo","Advérbio","Adjetivo","Verbo"], correta:2, explicacao:"A palavra 'novo' caracteriza o substantivo 'caderno', sendo um adjetivo."},
+{materia:"Português 7º Ano", assunto:"Classes Gramaticais II", pergunta:"\nNa frase 'Nós chegamos cedo', a palavra 'cedo' é:", opcoes:["Adjetivo","Substantivo","Advérbio","Pronome"], correta:2, explicacao:"A palavra 'cedo' indica tempo em relação ao verbo 'chegamos', sendo um advérbio."},
+{materia:"Português 7º Ano", assunto:"Classes Gramaticais II", pergunta:"\nNa frase 'O cachorro latiu muito', a palavra 'cachorro' é:", opcoes:["Substantivo","Verbo","Adjetivo","Advérbio"], correta:0, explicacao:"A palavra 'cachorro' nomeia um ser, sendo um substantivo."},
+{materia:"Português 7º Ano", assunto:"Classes Gramaticais II", pergunta:"\nNa frase 'Ela chegou e sentou', a palavra 'e' é:", opcoes:["Preposição","Advérbio","Adjetivo","Conjunção"], correta:3, explicacao:"A palavra 'e' liga duas orações, sendo uma conjunção coordenativa aditiva."},
+{materia:"Português 7º Ano", assunto:"Classes Gramaticais II", pergunta:"\nNa frase 'O carro azul passou', a palavra 'carro' é:", opcoes:["Substantivo","Adjetivo","Pronome","Advérbio"], correta:0, explicacao:"A palavra 'carro' nomeia um objeto, sendo um substantivo."},
+{materia:"Português 7º Ano", assunto:"Classes Gramaticais II", pergunta:"\nNa frase 'Estudamos para a prova', a palavra 'para' é:", opcoes:["Verbo","Substantivo","Preposição","Adjetivo"], correta:2, explicacao:"A palavra 'para' liga o verbo ao complemento 'a prova', sendo uma preposição."},
+
+{materia:"Português 7º Ano", assunto:"Substantivo e adjetivo (flexão e grau)", pergunta:"\nFlexão do substantivo ocorre em:", opcoes:["Tempo e modo","Gênero e número","Somente tempo","Somente grau"], correta:1, explicacao:"Substantivo flexiona em gênero (masculino/feminino) e número (singular/plural)."},
+{materia:"Português 7º Ano", assunto:"Substantivo e adjetivo (flexão e grau)", pergunta:"\nO plural de 'casa' é:", opcoes:["Casaes","Casas","Cazas","Cas"], correta:1, explicacao:"O plural correto é casas."},
+{materia:"Português 7º Ano", assunto:"Substantivo e adjetivo (flexão e grau)", pergunta:"\nO feminino de 'menino' é:", opcoes:["Menina","Menine","Meninas","Menin"], correta:0, explicacao:"Menina é o feminino de menino."},
+{materia:"Português 7º Ano", assunto:"Substantivo e adjetivo (flexão e grau)", pergunta:"\nO grau aumentativo de 'casa' é:", opcoes:["Casinha","Casarão","Casa pequena","Casas"], correta:1, explicacao:"Casarão indica aumento do tamanho."},
+{materia:"Português 7º Ano", assunto:"Substantivo e adjetivo (flexão e grau)", pergunta:"\nO grau diminutivo de 'livro' é:", opcoes:["Livrão","Livrinho","Livros","Livrote"], correta:1, explicacao:"Livrinho indica diminuição."},
+{materia:"Português 7º Ano", assunto:"Substantivo e adjetivo (flexão e grau)", pergunta:"\nO adjetivo concorda com:", opcoes:["Verbo","Advérbio","Substantivo","Preposição"], correta:2, explicacao:"O adjetivo concorda com o substantivo."},
+{materia:"Português 7º Ano", assunto:"Substantivo e adjetivo (flexão e grau)", pergunta:"\nNa frase 'meninas bonitas', bonitas está no:", opcoes:["Masculino singular","Feminino plural","Masculino plural","Feminino singular"], correta:1, explicacao:"Bonitas concorda com meninas."},
+{materia:"Português 7º Ano", assunto:"Substantivo e adjetivo (flexão e grau)", pergunta:"\nO plural de 'animal' é:", opcoes:["Animals","Animais","Animalis","Animales"], correta:1, explicacao:"Animais é o plural correto."},
+{materia:"Português 7º Ano", assunto:"Substantivo e adjetivo (flexão e grau)", pergunta:"\nO grau comparativo do adjetivo indica:", opcoes:["Tempo","Comparação","Lugar","Quantidade"], correta:1, explicacao:"Comparativo compara duas qualidades."},
+{materia:"Português 7º Ano", assunto:"Substantivo e adjetivo (flexão e grau)", pergunta:"\nNa frase 'carro mais rápido', temos grau:", opcoes:["Normal","Diminutivo","Comparativo","Aumentativo"], correta:2, explicacao:"Mais rápido indica comparação."},
+
+{materia:"Português 7º Ano", assunto:"Verbos (tempos e modos)", pergunta:"\nOs tempos verbais principais são:", opcoes:["Masculino e feminino","Presente, passado e futuro","Singular e plural","Afirmativo e negativo"], correta:1, explicacao:"Os tempos principais são presente, passado e futuro."},
+{materia:"Português 7º Ano", assunto:"Verbos (tempos e modos)", pergunta:"\nNa frase 'Eu estudo todos os dias', o verbo está no:", opcoes:["Passado","Futuro","Presente","Imperativo"], correta:2, explicacao:"Estudo indica ação no presente."},
+{materia:"Português 7º Ano", assunto:"Verbos (tempos e modos)", pergunta:"\nNa frase 'Eu estudei ontem', o verbo está no:", opcoes:["Presente","Futuro","Passado","Imperativo"], correta:2, explicacao:"Estudei indica ação no passado."},
+{materia:"Português 7º Ano", assunto:"Verbos (tempos e modos)", pergunta:"\nNa frase 'Eu estudarei amanhã', o verbo está no:", opcoes:["Presente","Passado","Futuro","Modo subjuntivo"], correta:2, explicacao:"Estudarei indica ação futura."},
+{materia:"Português 7º Ano", assunto:"Verbos (tempos e modos)", pergunta:"\nO modo indicativo indica:", opcoes:["Dúvida","Ordem","Certeza","Desejo"], correta:2, explicacao:"Modo indicativo indica certeza."},
+{materia:"Português 7º Ano", assunto:"Verbos (tempos e modos)", pergunta:"\nO modo imperativo indica:", opcoes:["Certeza","Ordem ou pedido","Dúvida","Passado"], correta:1, explicacao:"Imperativo indica ordem ou pedido."},
+{materia:"Português 7º Ano", assunto:"Verbos (tempos e modos)", pergunta:"\nO modo subjuntivo indica:", opcoes:["Certeza","Ordem","Dúvida ou possibilidade","Ação passada"], correta:2, explicacao:"Subjuntivo indica dúvida ou possibilidade."},
+{materia:"Português 7º Ano", assunto:"Verbos (tempos e modos)", pergunta:"\nNa frase 'Estude agora!', o verbo está no:", opcoes:["Indicativo","Subjuntivo","Imperativo","Infinitivo"], correta:2, explicacao:"Estude indica ordem."},
+{materia:"Português 7º Ano", assunto:"Verbos (tempos e modos)", pergunta:"\nNa frase 'Se eu estudasse, passaria', temos modo:", opcoes:["Indicativo","Imperativo","Subjuntivo","Futuro"], correta:2, explicacao:"Estudasse indica possibilidade."},
+{materia:"Português 7º Ano", assunto:"Verbos (tempos e modos)", pergunta:"\nO verbo 'cantar' está no:", opcoes:["Infinitivo","Presente","Passado","Futuro"], correta:0, explicacao:"Cantar está no infinitivo."},
+
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'Eu canto todos os dias', o verbo 'canto' está em qual tempo verbal?", opcoes:["Presente","Pretérito","Futuro","Imperativo"], correta:0, explicacao:"O verbo 'canto' indica uma ação que acontece no momento atual ou de forma habitual, portanto está no presente."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'Nós viajaremos amanhã', o verbo 'viajaremos' está em qual tempo verbal?", opcoes:["Presente","Pretérito","Futuro","Infinitivo"], correta:2, explicacao:"O verbo 'viajaremos' indica uma ação que acontecerá no futuro, portanto está no futuro do presente."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'Eles estudaram para a prova', o verbo 'estudaram' está em:", opcoes:["Presente","Pretérito","Futuro","Gerúndio"], correta:1, explicacao:"O verbo 'estudaram' indica uma ação que já aconteceu, estando no pretérito."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'Faça a tarefa agora', o verbo 'faça' está no:", opcoes:["Pretérito","Futuro","Presente","Imperativo"], correta:3, explicacao:"O verbo 'faça' expressa uma ordem ou pedido, caracterizando o modo imperativo."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'Estudem para a prova', o verbo 'estudem' expressa:", opcoes:["Ação passada","Ação futura","Ação contínua","Ordem ou pedido"], correta:3, explicacao:"O verbo 'estudem' está no modo imperativo, expressando ordem ou pedido."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'Eu estou estudando', a forma 'estudando' está no:", opcoes:["Infinitivo","Particípio","Gerúndio","Imperativo"], correta:2, explicacao:"A forma 'estudando' termina em -ndo, característica do gerúndio."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'Eles vão sair agora', o verbo principal é:", opcoes:["vão","sair","agora","eles"], correta:1, explicacao:"O verbo principal é 'sair', pois indica a ação principal da frase; 'vão' funciona como verbo auxiliar formando a locução verbal."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'Ela cantou ontem', o verbo indica:", opcoes:["Ação passada","Ação futura","Ordem","Ação contínua"], correta:0, explicacao:"O verbo 'cantou' indica uma ação que já aconteceu, portanto está no passado (pretérito perfeito)."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'Eles estudarão amanhã', o verbo 'estudarão' está em qual tempo verbal?", opcoes:["Pretérito","Presente","Futuro","Imperativo"], correta:2, explicacao:"O verbo 'estudarão' indica uma ação que acontecerá no futuro, sendo futuro do presente."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nQual é o tempo verbal da frase 'Ontem nós jogamos futebol'?", opcoes:["Presente","Futuro do presente","Passado (pretérito perfeito)","Futuro do pretérito"], correta:2, explicacao:"O verbo 'jogamos' indica uma ação concluída no passado, portanto está no pretérito perfeito."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'Eles estudam todos os dias para a prova', qual o modo verbal utilizado?", opcoes:["Indicativo","Subjuntivo","Imperativo","Infinitivo"], correta:0, explicacao:"O verbo 'estudam' expressa uma ação real e habitual, característica do modo indicativo."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nIdentifique a forma verbal da frase: 'Se eu tivesse dinheiro, compraria um carro'.", opcoes:["Infinitivo","Indicativo","Subjuntivo","Imperativo"], correta:2, explicacao:"O verbo 'tivesse' está no pretérito imperfeito do subjuntivo, indicando hipótese ou condição."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'Faça o seu melhor no trabalho', o verbo está no modo:", opcoes:["Indicativo","Imperativo","Subjuntivo","Infinitivo"], correta:1, explicacao:"O verbo 'faça' está no modo imperativo, pois expressa ordem ou pedido."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nEm 'Se ele estudar, será aprovado', o verbo 'estudar' está no modo:", opcoes:["Imperativo","Indicativo","Subjuntivo","Infinitivo"], correta:2, explicacao:"O verbo 'estudar' está no futuro do subjuntivo, indicando uma condição futura."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nQual é o infinitivo da frase 'Eles vão correr amanhã'?", opcoes:["Correr","Vão","Eles","Amanhã"], correta:0, explicacao:"O verbo 'correr' está no infinitivo e faz parte da locução verbal 'vão correr'."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'O menino brincava no quintal', qual o tempo verbal do verbo?", opcoes:["Pretérito perfeito","Pretérito imperfeito","Futuro do presente","Futuro do pretérito"], correta:1, explicacao:"O verbo 'brincava' indica uma ação contínua no passado, sendo pretérito imperfeito."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nQual é o modo verbal de 'Que ele venha logo'?", opcoes:["Indicativo","Imperativo","Subjuntivo","Infinitivo"], correta:2, explicacao:"O verbo 'venha' está no modo subjuntivo, pois expressa desejo ou expectativa."},
+{materia:"Português 7º Ano", assunto:"Verbos II", pergunta:"\nNa frase 'Eles vão viajar para o litoral no próximo mês', o verbo 'viajar' está no modo:", opcoes:["Indicativo","Subjuntivo","Infinitivo","Imperativo"], correta:2, explicacao:"O verbo 'viajar' está no infinitivo e faz parte da locução verbal 'vão viajar'."},
+
+{materia:"Português 7º Ano", assunto:"Advérbio I", pergunta:"\nAdvérbio é a palavra que indica:", opcoes:["Nome","Ação","Circunstância","Pessoa"], correta:2, explicacao:"Advérbio indica circunstância como tempo, lugar, modo, intensidade."},
+{materia:"Português 7º Ano", assunto:"Advérbio I", pergunta:"\nNa frase 'Ele correu rapidamente', rapidamente é:", opcoes:["Substantivo","Adjetivo","Advérbio","Pronome"], correta:2, explicacao:"Rapidamente indica modo da ação."},
+{materia:"Português 7º Ano", assunto:"Advérbio I", pergunta:"\nQual alternativa apresenta advérbio?", opcoes:["Casa","Bonito","Ontem","Mesa"], correta:2, explicacao:"Ontem indica tempo, sendo advérbio."},
+{materia:"Português 7º Ano", assunto:"Advérbio I", pergunta:"\nAdvérbio de tempo indica:", opcoes:["Lugar","Modo","Tempo","Pessoa"], correta:2, explicacao:"Advérbio de tempo indica quando algo acontece."},
+{materia:"Português 7º Ano", assunto:"Advérbio I", pergunta:"\nNa frase 'Ele chegou ontem', ontem é:", opcoes:["Advérbio","Verbo","Substantivo","Artigo"], correta:0, explicacao:"Ontem indica tempo."},
+{materia:"Português 7º Ano", assunto:"Advérbio I", pergunta:"\nAdvérbio de lugar indica:", opcoes:["Tempo","Lugar","Modo","Quantidade"], correta:1, explicacao:"Indica onde acontece a ação."},
+{materia:"Português 7º Ano", assunto:"Advérbio I", pergunta:"\nNa frase 'Ele mora aqui', aqui é:", opcoes:["Pronome","Advérbio","Substantivo","Verbo"], correta:1, explicacao:"Aqui indica lugar."},
+{materia:"Português 7º Ano", assunto:"Advérbio I", pergunta:"\nAdvérbio de modo geralmente termina em:", opcoes:["-mente","-ção","-ar","-oso"], correta:0, explicacao:"Muitos advérbios de modo terminam em mente."},
+{materia:"Português 7º Ano", assunto:"Advérbio I", pergunta:"\nNa frase 'Ela falou calmamente', calmamente é:", opcoes:["Adjetivo","Verbo","Advérbio","Substantivo"], correta:2, explicacao:"Calmamente indica modo da fala."},
+{materia:"Português 7º Ano", assunto:"Advérbio I", pergunta:"\nAdvérbio modifica principalmente:", opcoes:["Substantivo","Verbo","Artigo","Preposição"], correta:1, explicacao:"Advérbio modifica principalmente o verbo."},
+
+{materia:"Português 7º Ano", assunto:"Preposição", pergunta:"\nPreposição é a palavra que:", opcoes:["Indica ação","Liga palavras","Caracteriza substantivo","Substitui nome"], correta:1, explicacao:"Preposição liga palavras na frase."},
+{materia:"Português 7º Ano", assunto:"Preposição", pergunta:"\nNa frase 'Livro de João', a palavra de é:", opcoes:["Verbo","Substantivo","Preposição","Adjetivo"], correta:2, explicacao:"De liga livro a João."},
+{materia:"Português 7º Ano", assunto:"Preposição", pergunta:"\nQual alternativa apresenta uma preposição?", opcoes:["Casa","Bonito","De","Correr"], correta:2, explicacao:"De é preposição."},
+{materia:"Português 7º Ano", assunto:"Preposição", pergunta:"\nAs preposições servem para:", opcoes:["Separar frases","Ligar palavras","Indicar ação","Caracterizar substantivo"], correta:1, explicacao:"Preposição liga termos da frase."},
+{materia:"Português 7º Ano", assunto:"Preposição", pergunta:"\nNa frase 'Ele foi para escola', para é:", opcoes:["Pronome","Preposição","Verbo","Adjetivo"], correta:1, explicacao:"Para liga foi a escola."},
+{materia:"Português 7º Ano", assunto:"Preposição", pergunta:"\nQual palavra é preposição?", opcoes:["Com","Mesa","Bonito","Estudar"], correta:0, explicacao:"Com é preposição."},
+{materia:"Português 7º Ano", assunto:"Preposição", pergunta:"\nNa frase 'Ele mora em Belém', em é:", opcoes:["Substantivo","Verbo","Preposição","Artigo"], correta:2, explicacao:"Em liga mora a Belém."},
+{materia:"Português 7º Ano", assunto:"Preposição", pergunta:"\nPreposições indicam:", opcoes:["Relação entre palavras","Tempo verbal","Plural","Pontuação"], correta:0, explicacao:"Preposição indica relação entre palavras."},
+{materia:"Português 7º Ano", assunto:"Preposição", pergunta:"\nQual frase tem preposição?", opcoes:["Casa bonita","Ele foi com ela","Menino corre","Mesa grande"], correta:1, explicacao:"Com é preposição."},
+{materia:"Português 7º Ano", assunto:"Preposição", pergunta:"\nA palavra 'sobre' é:", opcoes:["Verbo","Substantivo","Preposição","Adjetivo"], correta:2, explicacao:"Sobre é uma preposição."},
+
+{materia:"Português 7º Ano", assunto:"Preposição II", pergunta:"\nNa frase 'Eu fui à escola de ônibus', a palavra 'de' indica:", opcoes:["Meio de transporte","Tempo","Lugar","Causa"], correta:0, explicacao:"A preposição 'de' em 'de ônibus' indica meio de transporte, mostrando como a pessoa foi à escola."},
+{materia:"Português 7º Ano", assunto:"Preposição II", pergunta:"\nNa frase 'Ele saiu para trabalhar', a palavra 'para' indica:", opcoes:["Lugar","Tempo","Finalidade","Companhia"], correta:2, explicacao:"A preposição 'para' indica finalidade, ou seja, o objetivo da ação de sair."},
+{materia:"Português 7º Ano", assunto:"Preposição II", pergunta:"\nNa frase 'Fui com meu amigo ao cinema', a palavra 'com' indica:", opcoes:["Lugar","Companhia","Tempo","Modo"], correta:1, explicacao:"A preposição 'com' indica companhia, pois mostra que a ação foi realizada junto com outra pessoa."},
+{materia:"Português 7º Ano", assunto:"Preposição II", pergunta:"\nNa frase 'Ele chegou após o almoço', a palavra 'após' indica:", opcoes:["Lugar","Modo","Companhia","Tempo"], correta:3, explicacao:"A preposição 'após' indica tempo, pois mostra que a ação ocorreu depois do almoço."},
+{materia:"Português 7º Ano", assunto:"Preposição II", pergunta:"\nNa frase 'Ela chorou de tristeza', a preposição 'de' indica:", opcoes:["Tempo","Lugar","Modo","Causa"], correta:3, explicacao:"A preposição 'de' indica causa, pois mostra o motivo do choro."},
+{materia:"Português 7º Ano", assunto:"Preposição II", pergunta:"\nNa frase 'O livro está sobre a mesa', a palavra 'sobre' indica:", opcoes:["Tempo","Causa","Lugar","Modo"], correta:2, explicacao:"A preposição 'sobre' indica lugar, mostrando a posição do livro."},
+{materia:"Português 7º Ano", assunto:"Preposição II", pergunta:"\nNa frase 'Saímos sem dinheiro', a palavra 'sem' indica:", opcoes:["Tempo","Falta ou ausência","Lugar","Companhia"], correta:1, explicacao:"A preposição 'sem' indica ausência de algo, neste caso, dinheiro."},
+{materia:"Português 7º Ano", assunto:"Preposição II", pergunta:"\nNa frase 'Ele veio de Belém', a palavra 'de' indica:", opcoes:["Origem","Tempo","Companhia","Modo"], correta:0, explicacao:"A preposição 'de' indica origem, mostrando de onde ele veio."},
+{materia:"Português 7º Ano", assunto:"Preposição II", pergunta:"\nNa frase 'Ela ficou até tarde', a palavra 'até' indica:", opcoes:["Tempo limite","Lugar","Modo","Causa"], correta:0, explicacao:"A preposição 'até' indica limite de tempo, ou seja, o momento máximo em que a ação ocorreu."},
+{materia:"Português 7º Ano", assunto:"Preposição II", pergunta:"\nNa frase 'Ele falou sobre o assunto', a palavra 'sobre' indica:", opcoes:["Tempo","Origem","Assunto ou tema","Lugar"], correta:2, explicacao:"A preposição 'sobre' indica o assunto ou tema da fala."},
+
+{materia:"Português 7º Ano", assunto:"Conjunção II", pergunta:"\nNa frase 'Estudei, portanto passei no teste', a palavra 'portanto' é:", opcoes:["Preposição","Advérbio","Conjunção","Adjetivo"], correta:2, explicacao:"A palavra 'portanto' liga ideias e indica consequência, funcionando como conjunção coordenativa conclusiva."},
+{materia:"Português 7º Ano", assunto:"Conjunção II", pergunta:"\nNa frase 'Ele queria ir, mas estava cansado', a palavra 'mas' é:", opcoes:["Substantivo","Preposição","Adjetivo","Conjunção"], correta:3, explicacao:"A palavra 'mas' liga duas orações com sentido de oposição, sendo uma conjunção coordenativa adversativa."},
+{materia:"Português 7º Ano", assunto:"Conjunção II", pergunta:"\nNa frase 'Não fui à festa porque estava doente', a palavra 'porque' é:", opcoes:["Conjunção","Preposição","Subordinativa causal","Advérbio"], correta:0, explicacao:"A palavra 'porque' liga a oração principal à subordinada, indicando causa, funcionando como conjunção subordinativa causal."},
+{materia:"Português 7º Ano", assunto:"Conjunção II", pergunta:"\nNa frase 'Ele estudou para que pudesse passar', a palavra 'para que' é:", opcoes:["Preposição","Conjunção","Advérbio","Verbo"], correta:1, explicacao:"'Para que' introduz uma oração subordinada final, funcionando como conjunção subordinativa."},
+{materia:"Português 7º Ano", assunto:"Conjunção II", pergunta:"\nNa frase 'Farei o trabalho caso você me ajude', a palavra 'caso' é:", opcoes:["Preposição","Advérbio","Conjunção subordinativa condicional","Conjunção"], correta:2, explicacao:"A palavra 'caso' introduz uma condição, funcionando como conjunção subordinativa condicional."},
+{materia:"Português 7º Ano", assunto:"Conjunção II", pergunta:"\nNa frase 'Trabalhe ou estude, escolha você', a palavra 'ou' é:", opcoes:["Advérbio","Preposição","Adjetivo","Conjunção"], correta:3, explicacao:"A palavra 'ou' liga opções ou alternativas entre orações, sendo uma conjunção coordenativa alternativa."},
+{materia:"Português 7º Ano", assunto:"Conjunção II", pergunta:"\nNa frase 'Embora estivesse cansado, continuou a trabalhar', a palavra 'Embora' é:", opcoes:["Advérbio","Conjunção subordinativa concessiva","Preposição","Adjetivo"], correta:1, explicacao:"A palavra 'Embora' inicia uma oração subordinada concessiva, funcionando como conjunção subordinativa."},
+{materia:"Português 7º Ano", assunto:"Conjunção II", pergunta:"\nNa frase 'Ele saiu, pois precisava descansar', a palavra 'pois' é:", opcoes:["Preposição","Conjunção coordenativa explicativa","Advérbio","Adjetivo"], correta:1, explicacao:"A palavra 'pois' liga duas orações e indica explicação, funcionando como conjunção coordenativa explicativa."},
+{materia:"Português 7º Ano", assunto:"Conjunção II", pergunta:"\nNa frase 'Não estudou nem revisou', a palavra 'nem' é:", opcoes:["Conjunção coordenativa aditiva","Advérbio","Preposição","Adjetivo"], correta:0, explicacao:"A palavra 'nem' liga duas ações negativas, funcionando como conjunção coordenativa aditiva."},
+{materia:"Português 7º Ano", assunto:"Conjunção II", pergunta:"\nNa frase 'Ele falou, embora ninguém escutasse', a palavra 'embora' é:", opcoes:["Preposição","Conjunção subordinativa concessiva","Adjetivo","Advérbio"], correta:1, explicacao:"A palavra 'embora' introduz uma oração subordinada concessiva, funcionando como conjunção subordinativa."},
+
+{materia:"Português 7º Ano", assunto:"Frase, oração e período", pergunta:"\nFrase é:", opcoes:["Qualquer enunciado com sentido completo","Apenas texto escrito","Somente pergunta","Somente verbo"], correta:0, explicacao:"Frase é qualquer enunciado com sentido completo."},
+{materia:"Português 7º Ano", assunto:"Frase, oração e período", pergunta:"\nOração é:", opcoes:["Frase sem sentido","Enunciado com verbo","Texto grande","Parágrafo"], correta:1, explicacao:"Oração é o enunciado que possui verbo."},
+{materia:"Português 7º Ano", assunto:"Frase, oração e período", pergunta:"\nPeríodo é:", opcoes:["Frase com uma ou mais orações","Somente verbo","Palavra isolada","Pontuação"], correta:0, explicacao:"Período é formado por uma ou mais orações."},
+{materia:"Português 7º Ano", assunto:"Frase, oração e período", pergunta:"\nNa frase 'Choveu ontem', temos:", opcoes:["Duas orações","Nenhuma oração","Uma oração","Um período composto"], correta:2, explicacao:"Choveu é o verbo, formando uma oração."},
+{materia:"Português 7º Ano", assunto:"Frase, oração e período", pergunta:"\nNa frase 'Eu estudei e passei', temos:", opcoes:["Uma oração","Duas orações","Nenhuma oração","Três orações"], correta:1, explicacao:"Estudei e passei são dois verbos, duas orações."},
+{materia:"Português 7º Ano", assunto:"Frase, oração e período", pergunta:"\nFrase sem verbo é chamada de:", opcoes:["Oração","Período","Frase nominal","Texto"], correta:2, explicacao:"Frase nominal não possui verbo."},
+{materia:"Português 7º Ano", assunto:"Frase, oração e período", pergunta:"\nNa frase 'Que dia lindo!', temos:", opcoes:["Oração","Frase nominal","Período composto","Duas orações"], correta:1, explicacao:"Não há verbo, é frase nominal."},
+{materia:"Português 7º Ano", assunto:"Frase, oração e período", pergunta:"\nPeríodo simples possui:", opcoes:["Duas orações","Uma oração","Três orações","Nenhuma oração"], correta:1, explicacao:"Período simples tem apenas uma oração."},
+{materia:"Português 7º Ano", assunto:"Frase, oração e período", pergunta:"\nPeríodo composto possui:", opcoes:["Uma oração","Nenhuma oração","Duas ou mais orações","Somente substantivo"], correta:2, explicacao:"Período composto tem duas ou mais orações."},
+{materia:"Português 7º Ano", assunto:"Frase, oração e período", pergunta:"\nQual alternativa é um período simples?", opcoes:["Eu estudei e passei","Ele correu","João saiu e Maria ficou","Choveu e ventou"], correta:1, explicacao:"Ele correu possui apenas um verbo."},
+
+{materia:"Português 7º Ano", assunto:"Pontuação", pergunta:"\nO ponto final é usado para:", opcoes:["Indicar pergunta","Encerrar uma frase","Separar palavras","Indicar emoção"], correta:1, explicacao:"O ponto final encerra a frase."},
+{materia:"Português 7º Ano", assunto:"Pontuação", pergunta:"\nO ponto de interrogação indica:", opcoes:["Afirmação","Pergunta","Ordem","Tristeza"], correta:1, explicacao:"O ponto de interrogação indica pergunta."},
+{materia:"Português 7º Ano", assunto:"Pontuação", pergunta:"\nO ponto de exclamação indica:", opcoes:["Pergunta","Dúvida","Emoção","Separação"], correta:2, explicacao:"O ponto de exclamação indica emoção ou surpresa."},
+{materia:"Português 7º Ano", assunto:"Pontuação", pergunta:"\nA vírgula serve para:", opcoes:["Encerrar frase","Separar elementos","Indicar pergunta","Indicar ordem"], correta:1, explicacao:"A vírgula separa elementos da frase."},
+{materia:"Português 7º Ano", assunto:"Pontuação", pergunta:"\nNa frase 'João, Maria e Pedro foram', a vírgula separa:", opcoes:["Verbos","Nomes","Pontuação","Pergunta"], correta:1, explicacao:"A vírgula separa nomes na lista."},
+{materia:"Português 7º Ano", assunto:"Pontuação", pergunta:"\nDois pontos são usados para:", opcoes:["Encerrar frase","Introduzir explicação","Indicar pergunta","Separar sílabas"], correta:1, explicacao:"Dois pontos introduzem explicação ou fala."},
+{materia:"Português 7º Ano", assunto:"Pontuação", pergunta:"\nTravessão é usado para:", opcoes:["Indicar diálogo","Encerrar frase","Separar sílabas","Indicar pergunta"], correta:0, explicacao:"Travessão indica fala no diálogo."},
+{materia:"Português 7º Ano", assunto:"Pontuação", pergunta:"\nQual frase está correta?", opcoes:["João Maria e Pedro foram.","João, Maria e Pedro foram.","João Maria, e Pedro foram.","João Maria e, Pedro foram."], correta:1, explicacao:"A vírgula separa corretamente os nomes."},
+{materia:"Português 7º Ano", assunto:"Pontuação", pergunta:"\nAs reticências indicam:", opcoes:["Pergunta","Emoção","Continuação ou dúvida","Ordem"], correta:2, explicacao:"Reticências indicam continuidade ou suspense."},
+{materia:"Português 7º Ano", assunto:"Pontuação", pergunta:"\nQual sinal indica pergunta?", opcoes:["!","?","...","."], correta:1, explicacao:"O ponto de interrogação indica pergunta."},
+
+{materia:"Português 7º Ano", assunto:"Ortografia e acentuação", pergunta:"\nQual palavra está escrita corretamente?", opcoes:["Excessão","Exceção","Exessão","Exceçãu"], correta:1, explicacao:"Exceção é a forma correta."},
+{materia:"Português 7º Ano", assunto:"Ortografia e acentuação", pergunta:"\nQual palavra está correta?", opcoes:["Geito","Jeito","Jeyto","Geiyto"], correta:1, explicacao:"Jeito é a forma correta."},
+{materia:"Português 7º Ano", assunto:"Ortografia e acentuação", pergunta:"\nA palavra 'lápis' é acentuada porque:", opcoes:["É oxítona","É paroxítona terminada em s","É monossílaba","É verbo"], correta:1, explicacao:"Lápis é paroxítona terminada em s."},
+{materia:"Português 7º Ano", assunto:"Ortografia e acentuação", pergunta:"\nQual palavra está correta?", opcoes:["Menas","Menos","Menoz","Menaso"], correta:1, explicacao:"Menos é a forma correta."},
+{materia:"Português 7º Ano", assunto:"Ortografia e acentuação", pergunta:"\nA palavra 'café' é acentuada porque:", opcoes:["É proparoxítona","É oxítona terminada em e","É paroxítona","É verbo"], correta:1, explicacao:"Café é oxítona terminada em e."},
+{materia:"Português 7º Ano", assunto:"Ortografia e acentuação", pergunta:"\nQual palavra está correta?", opcoes:["Trouse","Trouxe","Truze","Truse"], correta:1, explicacao:"Trouxe é a forma correta."},
+{materia:"Português 7º Ano", assunto:"Ortografia e acentuação", pergunta:"\nA palavra 'pássaro' é acentuada porque:", opcoes:["É oxítona","É paroxítona","É proparoxítona","É monossílaba"], correta:2, explicacao:"Pássaro é proparoxítona."},
+{materia:"Português 7º Ano", assunto:"Ortografia e acentuação", pergunta:"\nQual palavra está correta?", opcoes:["Concerteza","Com certeza","Conserteza","Comserteza"], correta:1, explicacao:"Com certeza é a forma correta."},
+{materia:"Português 7º Ano", assunto:"Ortografia e acentuação", pergunta:"\nTodas as proparoxítonas são:", opcoes:["Sem acento","Acentuadas","Oxítonas","Paroxítonas"], correta:1, explicacao:"Todas as proparoxítonas são acentuadas."},
+{materia:"Português 7º Ano", assunto:"Ortografia e acentuação", pergunta:"\nQual palavra está correta?", opcoes:["Atras","Atrás","Atraz","Atrhas"], correta:1, explicacao:"Atrás é a forma correta."},
+
+{materia:"Português 8º Ano", assunto:"Sujeito (tipos)", pergunta:"\nSujeito é:", opcoes:["Quem pratica ou sofre a ação","O verbo da frase","O predicado","A pontuação"], correta:0, explicacao:"Sujeito é quem pratica ou sofre a ação."},
+{materia:"Português 8º Ano", assunto:"Sujeito (tipos)", pergunta:"\nSujeito simples possui:", opcoes:["Dois núcleos","Um núcleo","Três núcleos","Nenhum núcleo"], correta:1, explicacao:"Sujeito simples possui um núcleo."},
+{materia:"Português 8º Ano", assunto:"Sujeito (tipos)", pergunta:"\nNa frase 'João correu', o sujeito é:", opcoes:["Correu","João","Frase","Predicado"], correta:1, explicacao:"João é o sujeito."},
+{materia:"Português 8º Ano", assunto:"Sujeito (tipos)", pergunta:"\nSujeito composto possui:", opcoes:["Um núcleo","Nenhum núcleo","Dois ou mais núcleos","Somente verbo"], correta:2, explicacao:"Sujeito composto tem dois ou mais núcleos."},
+{materia:"Português 8º Ano", assunto:"Sujeito (tipos)", pergunta:"\nNa frase 'João e Maria estudam', o sujeito é:", opcoes:["Estudam","João","Maria","João e Maria"], correta:3, explicacao:"João e Maria formam sujeito composto."},
+{materia:"Português 8º Ano", assunto:"Sujeito (tipos)", pergunta:"\nSujeito oculto é:", opcoes:["Não existe","Não aparece, mas é identificado","Sempre aparece","É o verbo"], correta:1, explicacao:"Sujeito oculto pode ser identificado pelo verbo."},
+{materia:"Português 8º Ano", assunto:"Sujeito (tipos)", pergunta:"\nNa frase 'Estudei ontem', o sujeito é:", opcoes:["Eu (oculto)","Ontem","Estudei","Frase"], correta:0, explicacao:"O sujeito oculto é eu."},
+{materia:"Português 8º Ano", assunto:"Sujeito (tipos)", pergunta:"\nSujeito indeterminado ocorre quando:", opcoes:["Sabemos quem faz a ação","Não sabemos quem faz a ação","Tem dois núcleos","Tem artigo"], correta:1, explicacao:"Não se sabe quem pratica a ação."},
+{materia:"Português 8º Ano", assunto:"Sujeito (tipos)", pergunta:"\nNa frase 'Disseram que vai chover', o sujeito é:", opcoes:["Eles","Indeterminado","Chover","Frase"], correta:1, explicacao:"Não se sabe quem disse, sujeito indeterminado."},
+{materia:"Português 8º Ano", assunto:"Sujeito (tipos)", pergunta:"\nSujeito inexistente ocorre quando:", opcoes:["Tem sujeito oculto","Tem sujeito composto","Não existe sujeito","Tem dois verbos"], correta:2, explicacao:"Sujeito inexistente ocorre com verbos impessoais."},
+
+{materia:"Português 8º Ano", assunto:"Predicativo I", pergunta:"\nPredicativo é:", opcoes:["Verbo da frase","Característica do sujeito ou objeto","Pontuação","Palavra que liga frases"], correta:1, explicacao:"Predicativo indica característica do sujeito ou do objeto."},
+{materia:"Português 8º Ano", assunto:"Predicativo I", pergunta:"\nNa frase 'Maria está feliz', feliz é:", opcoes:["Substantivo","Predicativo","Verbo","Artigo"], correta:1, explicacao:"Feliz é característica do sujeito Maria, portanto é predicativo do sujeito."},
+{materia:"Português 8º Ano", assunto:"Predicativo I", pergunta:"\nPredicativo do sujeito indica:", opcoes:["Lugar","Característica do sujeito","Tempo","Ação"], correta:1, explicacao:"Predicativo do sujeito mostra uma característica do sujeito."},
+{materia:"Português 8º Ano", assunto:"Predicativo I", pergunta:"\nNa frase 'João chegou cansado', cansado é:", opcoes:["Objeto","Verbo","Predicativo do sujeito","Artigo"], correta:2, explicacao:"Cansado caracteriza João, sendo predicativo do sujeito."},
+{materia:"Português 8º Ano", assunto:"Predicativo I", pergunta:"\nPredicativo do objeto caracteriza:", opcoes:["Pontuação","Sujeito","Objeto","Verbo"], correta:2, explicacao:"Predicativo do objeto caracteriza o objeto da oração."},
+{materia:"Português 8º Ano", assunto:"Predicativo I", pergunta:"\nNa frase 'Considero João inteligente', inteligente é:", opcoes:["Verbo","Artigo","Predicativo do objeto","Sujeito"], correta:2, explicacao:"Inteligente caracteriza João, que é objeto da oração."},
+{materia:"Português 8º Ano", assunto:"Predicativo I", pergunta:"\nO predicativo geralmente é:", opcoes:["Adjetivo","Verbo","Preposição","Artigo"], correta:0, explicacao:"Predicativo geralmente é um adjetivo."},
+{materia:"Português 8º Ano", assunto:"Predicativo I", pergunta:"\nNa frase 'O aluno está atento', atento é:", opcoes:["Objeto","Predicativo do sujeito","Verbo","Pronome"], correta:1, explicacao:"Atento caracteriza o aluno, sendo predicativo do sujeito."},
+{materia:"Português 8º Ano", assunto:"Predicativo I", pergunta:"\nPredicativo aparece com verbos de:", opcoes:["Pontuação","Lugar","Ligação","Tempo"], correta:2, explicacao:"Predicativo aparece principalmente com verbos de ligação como ser, estar e permanecer."},
+{materia:"Português 8º Ano", assunto:"Predicativo I", pergunta:"\nQual frase tem predicativo?", opcoes:["João correu","Pedro saiu","Maria está feliz","Casa grande"], correta:2, explicacao:"Em 'Maria está feliz', feliz é predicativo do sujeito."},
+
+{materia:"Português 8º Ano", assunto:"Objeto direto e indireto", pergunta:"\nObjeto direto é:", opcoes:["Complemento sem preposição","Complemento com preposição","Sujeito da frase","Verbo da frase"], correta:0, explicacao:"Objeto direto complementa o verbo sem preposição."},
+{materia:"Português 8º Ano", assunto:"Objeto direto e indireto", pergunta:"\nNa frase 'João comprou um livro', um livro é:", opcoes:["Sujeito","Objeto direto","Objeto indireto","Predicativo"], correta:1, explicacao:"'Um livro' complementa o verbo comprou sem preposição, sendo objeto direto."},
+{materia:"Português 8º Ano", assunto:"Objeto direto e indireto", pergunta:"\nObjeto indireto é:", opcoes:["Complemento sem preposição","Complemento com preposição","Verbo da frase","Predicado"], correta:1, explicacao:"Objeto indireto complementa o verbo com preposição."},
+{materia:"Português 8º Ano", assunto:"Objeto direto e indireto", pergunta:"\nNa frase 'João gosta de música', de música é:", opcoes:["Objeto direto","Objeto indireto","Sujeito","Predicativo"], correta:1, explicacao:"'De música' tem preposição e complementa o verbo, sendo objeto indireto."},
+{materia:"Português 8º Ano", assunto:"Objeto direto e indireto", pergunta:"\nQual frase tem objeto direto?", opcoes:["Ele gosta de futebol","Ela comprou pão","Pedro precisa de ajuda","João gosta de música"], correta:1, explicacao:"'Pão' complementa o verbo comprou sem preposição, sendo objeto direto."},
+{materia:"Português 8º Ano", assunto:"Objeto direto e indireto", pergunta:"\nQual frase tem objeto indireto?", opcoes:["Ele comprou pão","Maria leu o livro","João gosta de música","Pedro correu"], correta:2, explicacao:"'De música' tem preposição, sendo objeto indireto."},
+{materia:"Português 8º Ano", assunto:"Objeto direto e indireto", pergunta:"\nNa frase 'Maria entregou o livro ao professor', ao professor é:", opcoes:["Objeto direto","Objeto indireto","Sujeito","Verbo"], correta:1, explicacao:"'Ao professor' tem preposição e recebe a ação, sendo objeto indireto."},
+{materia:"Português 8º Ano", assunto:"Objeto direto e indireto", pergunta:"\nNa frase 'Maria entregou o livro ao professor', o livro é:", opcoes:["Objeto indireto","Predicativo","Objeto direto","Sujeito"], correta:2, explicacao:"'O livro' não tem preposição, sendo objeto direto."},
+{materia:"Português 8º Ano", assunto:"Objeto direto e indireto", pergunta:"\nObjeto direto responde a pergunta:", opcoes:["A quem?","De quem?","O quê?","Para quem?"], correta:2, explicacao:"Objeto direto responde geralmente à pergunta 'o quê?'."},
+{materia:"Português 8º Ano", assunto:"Objeto direto e indireto", pergunta:"\nObjeto indireto responde a pergunta:", opcoes:["O quê?","Quem?","Quando?","A quem ou de quem?"], correta:3, explicacao:"Objeto indireto responde geralmente a 'a quem?' ou 'de quem?'."},
+
+{materia:"Português 8º Ano", assunto:"Aposto", pergunta:"\nAposto é:", opcoes:["Palavra que caracteriza o verbo","Termo que explica ou detalha outro termo","Sujeito da frase","Pontuação"], correta:1, explicacao:"Aposto explica ou detalha um termo da frase."},
+{materia:"Português 8º Ano", assunto:"Aposto", pergunta:"\nNa frase 'João, meu amigo, chegou', meu amigo é:", opcoes:["Predicado","Aposto","Objeto","Verbo"], correta:1, explicacao:"Meu amigo explica quem é João."},
+{materia:"Português 8º Ano", assunto:"Aposto", pergunta:"\nAposto geralmente vem separado por:", opcoes:["Verbo","Pontuação","Sujeito","Tempo"], correta:1, explicacao:"Normalmente vem separado por vírgulas, dois pontos ou travessão."},
+{materia:"Português 8º Ano", assunto:"Aposto", pergunta:"\nNa frase 'Belém, capital do Pará, é bonita', capital do Pará é:", opcoes:["Objeto","Aposto","Verbo","Predicado"], correta:1, explicacao:"Capital do Pará explica Belém."},
+{materia:"Português 8º Ano", assunto:"Aposto", pergunta:"\nA função do aposto é:", opcoes:["Indicar ação","Explicar um termo","Indicar tempo","Separar frases"], correta:1, explicacao:"Aposto explica ou detalha."},
+{materia:"Português 8º Ano", assunto:"Aposto", pergunta:"\nNa frase 'Pedro, aluno do 8º ano, estudou', aluno do 8º ano é:", opcoes:["Verbo","Aposto","Objeto","Predicado"], correta:1, explicacao:"Aluno do 8º ano explica Pedro."},
+{materia:"Português 8º Ano", assunto:"Aposto", pergunta:"\nAposto pode vir após:", opcoes:["Verbo","Nome","Pontuação","Tempo"], correta:1, explicacao:"Aposto explica um nome."},
+{materia:"Português 8º Ano", assunto:"Aposto", pergunta:"\nNa frase 'O Brasil, país tropical, é grande', país tropical é:", opcoes:["Predicado","Objeto","Aposto","Sujeito"], correta:2, explicacao:"País tropical explica Brasil."},
+{materia:"Português 8º Ano", assunto:"Aposto", pergunta:"\nAposto pode ser retirado da frase sem mudar o sentido principal:", opcoes:["Não","Sim","Nunca","Somente às vezes"], correta:1, explicacao:"Aposto é uma explicação extra."},
+{materia:"Português 8º Ano", assunto:"Aposto", pergunta:"\nQual frase tem aposto?", opcoes:["João correu","Maria comprou pão","Belém, capital do Pará, é linda","Pedro saiu"], correta:2, explicacao:"Capital do Pará é aposto."},
+
+{materia:"Português 8º Ano", assunto:"Concordância verbal", pergunta:"\nConcordância verbal é:", opcoes:["Concordância entre verbo e sujeito","Concordância entre substantivos","Pontuação da frase","Uso de vírgula"], correta:0, explicacao:"Concordância verbal é a relação entre verbo e sujeito."},
+{materia:"Português 8º Ano", assunto:"Concordância verbal", pergunta:"\nNa frase 'Os alunos estudam', estudam concorda com:", opcoes:["Alunos","Frase","Objeto","Predicado"], correta:0, explicacao:"O verbo concorda com o sujeito alunos."},
+{materia:"Português 8º Ano", assunto:"Concordância verbal", pergunta:"\nQual frase está correta?", opcoes:["Os alunos estuda","Os alunos estudam","Os aluno estudam","Os alunos estudar"], correta:1, explicacao:"O verbo concorda com o sujeito no plural."},
+{materia:"Português 8º Ano", assunto:"Concordância verbal", pergunta:"\nNa frase 'Maria estuda', o verbo está no:", opcoes:["Plural","Singular","Futuro","Passado"], correta:1, explicacao:"Maria é singular, então estuda também."},
+{materia:"Português 8º Ano", assunto:"Concordância verbal", pergunta:"\nQual frase está correta?", opcoes:["João e Maria estuda","João e Maria estudam","João e Maria estudar","João e Maria estudou"], correta:1, explicacao:"Sujeito composto exige verbo no plural."},
+{materia:"Português 8º Ano", assunto:"Concordância verbal", pergunta:"\nNa frase 'Os meninos correram', correram está:", opcoes:["Errado","Correto","Sem verbo","Sem sujeito"], correta:1, explicacao:"Verbo concorda com meninos."},
+{materia:"Português 8º Ano", assunto:"Concordância verbal", pergunta:"\nQual frase está errada?", opcoes:["Os alunos estudam","O menino corre","As meninas brinca","João estuda"], correta:2, explicacao:"O correto seria brincam."},
+{materia:"Português 8º Ano", assunto:"Concordância verbal", pergunta:"\nO verbo concorda com:", opcoes:["Objeto","Sujeito","Predicado","Pontuação"], correta:1, explicacao:"O verbo concorda com o sujeito."},
+{materia:"Português 8º Ano", assunto:"Concordância verbal", pergunta:"\nNa frase 'O professor explicou', explicou está no:", opcoes:["Plural","Singular","Futuro","Imperativo"], correta:1, explicacao:"Professor é singular."},
+{materia:"Português 8º Ano", assunto:"Concordância verbal", pergunta:"\nQual frase está correta?", opcoes:["Os menino corre","Os meninos corre","Os meninos correm","Os meninos correr"], correta:2, explicacao:"Correm concorda com meninos."},
+
+{materia:"Português 8º Ano", assunto:"Concordância nominal", pergunta:"\nConcordância nominal é:", opcoes:["Concordância entre verbo e sujeito","Concordância entre nomes","Pontuação da frase","Uso de vírgula"], correta:1, explicacao:"Concordância nominal é a relação entre substantivo, artigo, adjetivo e pronome."},
+{materia:"Português 8º Ano", assunto:"Concordância nominal", pergunta:"\nNa frase 'Meninas bonitas', bonitas concorda com:", opcoes:["Frase","Meninas","Verbo","Pontuação"], correta:1, explicacao:"Bonitas concorda com meninas em gênero e número."},
+{materia:"Português 8º Ano", assunto:"Concordância nominal", pergunta:"\nQual frase está correta?", opcoes:["Menina bonito","Meninas bonito","Meninas bonitas","Menina bonitos"], correta:2, explicacao:"Adjetivo deve concordar com o substantivo."},
+{materia:"Português 8º Ano", assunto:"Concordância nominal", pergunta:"\nNa frase 'O aluno inteligente', inteligente concorda com:", opcoes:["Aluno","Verbo","Frase","Pontuação"], correta:0, explicacao:"Inteligente concorda com aluno."},
+{materia:"Português 8º Ano", assunto:"Concordância nominal", pergunta:"\nQual frase está correta?", opcoes:["Os menino estudioso","Os meninos estudioso","Os meninos estudiosos","Os menino estudiosos"], correta:2, explicacao:"Estudiosos concorda com meninos."},
+{materia:"Português 8º Ano", assunto:"Concordância nominal", pergunta:"\nArtigo e adjetivo devem concordar com:", opcoes:["Verbo","Substantivo","Pontuação","Tempo"], correta:1, explicacao:"Eles concordam com o substantivo."},
+{materia:"Português 8º Ano", assunto:"Concordância nominal", pergunta:"\nQual frase está errada?", opcoes:["Meninas bonitas","Casa grande","Menino felizes","Aluno inteligente"], correta:2, explicacao:"O correto seria menino feliz ou meninos felizes."},
+{materia:"Português 8º Ano", assunto:"Concordância nominal", pergunta:"\nNa frase 'As flores vermelhas', vermelhas está:", opcoes:["Errado","Correto","Sem sentido","Sem verbo"], correta:1, explicacao:"Adjetivo concorda com flores."},
+{materia:"Português 8º Ano", assunto:"Concordância nominal", pergunta:"\nQual frase está correta?", opcoes:["A casa grandes","As casas grandes","As casa grandes","A casas grande"], correta:1, explicacao:"Casas e grandes estão no plural."},
+{materia:"Português 8º Ano", assunto:"Concordância nominal", pergunta:"\nConcordância nominal envolve:", opcoes:["Verbo","Substantivo e adjetivo","Pontuação","Tempo"], correta:1, explicacao:"Envolve substantivo, artigo, adjetivo e pronome."},
+
+{materia:"Português 8º Ano", assunto:"Regência verbal e nominal", pergunta:"\nRegência verbal é:", opcoes:["Relação entre verbo e complemento","Relação entre substantivos","Uso de vírgula","Pontuação"], correta:0, explicacao:"Regência verbal estuda a relação entre o verbo e seus complementos."},
+{materia:"Português 8º Ano", assunto:"Regência verbal e nominal", pergunta:"\nNa frase 'Gosto de música', de música é:", opcoes:["Objeto direto","Complemento do verbo","Sujeito","Predicado"], correta:1, explicacao:"O verbo gostar exige preposição de."},
+{materia:"Português 8º Ano", assunto:"Regência verbal e nominal", pergunta:"\nO verbo 'gostar' exige:", opcoes:["Sem preposição","Preposição de","Preposição em","Preposição para"], correta:1, explicacao:"Gostar exige a preposição de."},
+{materia:"Português 8º Ano", assunto:"Regência verbal e nominal", pergunta:"\nRegência nominal é:", opcoes:["Relação entre nome e complemento","Relação entre verbo e sujeito","Pontuação da frase","Uso de vírgula"], correta:0, explicacao:"Regência nominal estuda a relação entre nome e complemento."},
+{materia:"Português 8º Ano", assunto:"Regência verbal e nominal", pergunta:"\nNa frase 'Tenho amor à família', à família é:", opcoes:["Objeto direto","Complemento nominal","Sujeito","Verbo"], correta:1, explicacao:"Amor exige preposição a."},
+{materia:"Português 8º Ano", assunto:"Regência verbal e nominal", pergunta:"\nO verbo 'assistir' no sentido de ver exige:", opcoes:["Sem preposição","Preposição a","Preposição de","Preposição em"], correta:1, explicacao:"Assistir no sentido de ver exige preposição a."},
+{materia:"Português 8º Ano", assunto:"Regência verbal e nominal", pergunta:"\nNa frase 'Assisti ao filme', ao filme é:", opcoes:["Objeto direto","Objeto indireto","Sujeito","Predicado"], correta:1, explicacao:"Assistir exige preposição a."},
+{materia:"Português 8º Ano", assunto:"Regência verbal e nominal", pergunta:"\nRegência verbal estuda:", opcoes:["Pontuação","Acentuação","Verbo e complemento","Substantivo e adjetivo"], correta:2, explicacao:"Estuda o verbo e seus complementos."},
+{materia:"Português 8º Ano", assunto:"Regência verbal e nominal", pergunta:"\nRegência nominal estuda:", opcoes:["Nome e complemento","Verbo e sujeito","Pontuação","Tempo"], correta:0, explicacao:"Estuda o nome e seus complementos."},
+{materia:"Português 8º Ano", assunto:"Regência verbal e nominal", pergunta:"\nQual frase está correta?", opcoes:["Gosto música","Gosto de música","Gosto música de","Gosto para música"], correta:1, explicacao:"Gostar exige preposição de."},
+
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nCrase é:", opcoes:["Junção de duas vogais","Junção da preposição a com o artigo a","Uso de vírgula","Uso de acento agudo"], correta:1, explicacao:"Crase é a junção da preposição a com o artigo a."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nNa frase 'Vou à escola', à indica:", opcoes:["Crase","Plural","Pontuação","Verbo"], correta:0, explicacao:"À indica a junção da preposição a com o artigo a."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nQual frase está correta?", opcoes:["Vou a escola","Vou à escola","Vou á escola","Vou para escola"], correta:1, explicacao:"O correto é vou à escola."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nA crase ocorre quando há:", opcoes:["Verbo","Substantivo","Preposição a + artigo a","Pontuação"], correta:2, explicacao:"Crase é a união de preposição a com artigo a."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nNa frase 'Entreguei o livro à professora', à professora é:", opcoes:["Sujeito","Objeto direto","Objeto indireto com crase","Verbo"], correta:2, explicacao:"Há preposição a + artigo a."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nQual frase está errada?", opcoes:["Vou à praia","Entreguei à professora","Fui à escola","Vou à casa amanhã"], correta:3, explicacao:"Casa sem especificação geralmente não leva crase."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nCrase é indicada por:", opcoes:["Vírgula","Acento grave","Ponto final","Acento agudo"], correta:1, explicacao:"Crase é indicada pelo acento grave."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nNa frase 'Fui à cidade', há crase porque:", opcoes:["Tem verbo","Tem substantivo","Tem preposição a + artigo a","Tem pontuação"], correta:2, explicacao:"Cidade admite artigo feminino."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nQual frase está correta?", opcoes:["Vou a praia","Vou à praia","Vou á praia","Vou para praia"], correta:1, explicacao:"Praia exige crase."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nA crase ocorre antes de palavras:", opcoes:["Masculinas","Femininas com artigo","Verbos","Pronomes pessoais"], correta:1, explicacao:"Ocorre antes de palavras femininas com artigo."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nAssinale a frase em que o uso da crase está correto:", opcoes:["Vou à escola todos os dias","Ele foi a feira ontem","Entreguei o presente a Maria","Chegamos a tarde"], correta:0, explicacao:"A forma correta é 'Vou à escola', pois há preposição 'a' + artigo feminino 'a'."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nEm qual alternativa o uso da crase está correto?", opcoes:["Cheguei à Bahia nas férias","Ela foi a casa de amigos","Ele se referiu a situação","Vamos a pé ao parque"], correta:0, explicacao:"'Cheguei à Bahia' está correto, pois indica destino feminino com preposição 'a' + artigo 'a'."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nIdentifique a frase que apresenta crase:", opcoes:["Vou a praia amanhã","Entreguei o documento a secretária","Referi-me à diretora sobre o assunto","Ela gosta de ir a festas"], correta:2, explicacao:"'Referi-me à diretora' apresenta crase (preposição 'a' + artigo 'a')."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nAssinale a alternativa com uso correto da crase:", opcoes:["Ele se dirigiu à professora","Ela foi a reunião de trabalho","Vou a pé até o mercado","Entreguei o relatório a gerente"], correta:0, explicacao:"'À professora' está correto, pois há preposição 'a' + artigo feminino 'a'."},
+{materia:"Português 8º Ano", assunto:"Crase", pergunta:"\nQual das frases apresenta o uso correto da crase?", opcoes:["Fomos à padaria cedo","Cheguei a casa tarde","Ela se referiu a amiga","Vamos a escola juntos"], correta:0, explicacao:"'À padaria' está correto, pois há preposição 'a' + artigo feminino 'a'."},
+
+{materia:"Português 8º Ano", assunto:"Período simples", pergunta:"\nPeríodo simples é:", opcoes:["Frase com duas orações","Frase com uma oração","Frase sem verbo","Frase com vírgula"], correta:1, explicacao:"Período simples possui apenas uma oração."},
+{materia:"Português 8º Ano", assunto:"Período simples", pergunta:"\nNa frase 'João estuda todos os dias', temos:", opcoes:["Período composto","Período simples","Sem oração","Sem verbo"], correta:1, explicacao:"Há apenas um verbo, portanto é período simples."},
+{materia:"Português 8º Ano", assunto:"Período simples", pergunta:"\nPeríodo simples possui:", opcoes:["Duas orações","Uma oração","Três orações","Nenhuma oração"], correta:1, explicacao:"Período simples tem apenas uma oração."},
+{materia:"Português 8º Ano", assunto:"Período simples", pergunta:"\nQual frase é período simples?", opcoes:["João estuda e Maria trabalha","Pedro correu","Ana saiu e voltou","Eu fui e comprei pão"], correta:1, explicacao:"Pedro correu tem apenas uma oração."},
+{materia:"Português 8º Ano", assunto:"Período simples", pergunta:"\nUma oração é identificada por:", opcoes:["Vírgula","Verbo","Substantivo","Adjetivo"], correta:1, explicacao:"A oração possui um verbo."},
+{materia:"Português 8º Ano", assunto:"Período simples", pergunta:"\nNa frase 'O professor explicou a matéria', temos:", opcoes:["Duas orações","Período simples","Período composto","Sem oração"], correta:1, explicacao:"Há apenas um verbo explicou."},
+{materia:"Português 8º Ano", assunto:"Período simples", pergunta:"\nQual frase é período simples?", opcoes:["João estudou e passou","Maria trabalha","Pedro saiu e voltou","Ana leu e escreveu"], correta:1, explicacao:"Maria trabalha tem apenas uma oração."},
+{materia:"Português 8º Ano", assunto:"Período simples", pergunta:"\nPeríodo simples possui apenas:", opcoes:["Uma frase","Um verbo","Um sujeito","Uma oração"], correta:3, explicacao:"Período simples tem apenas uma oração."},
+{materia:"Português 8º Ano", assunto:"Período simples", pergunta:"\nNa frase 'Os alunos estudaram', estudaram indica:", opcoes:["Duas orações","Uma oração","Sem verbo","Sem sujeito"], correta:1, explicacao:"Há apenas um verbo."},
+{materia:"Português 8º Ano", assunto:"Período simples", pergunta:"\nQual frase está correta como período simples?", opcoes:["João saiu e voltou","Maria corre","Pedro estudou e passou","Ana leu e escreveu"], correta:1, explicacao:"Maria corre possui apenas uma oração."},
+
+{materia:"Português 8º Ano", assunto:"Período composto", pergunta:"\nPeríodo composto é:", opcoes:["Frase com uma oração","Frase com duas ou mais orações","Frase sem verbo","Frase com vírgula"], correta:1, explicacao:"Período composto possui duas ou mais orações."},
+{materia:"Português 8º Ano", assunto:"Período composto", pergunta:"\nNa frase 'João estudou e passou', temos:", opcoes:["Período simples","Período composto","Sem oração","Sem verbo"], correta:1, explicacao:"Há dois verbos: estudou e passou."},
+{materia:"Português 8º Ano", assunto:"Período composto", pergunta:"\nPeríodo composto possui:", opcoes:["Uma oração","Duas ou mais orações","Sem verbo","Sem sujeito"], correta:1, explicacao:"Período composto tem mais de uma oração."},
+{materia:"Português 8º Ano", assunto:"Período composto", pergunta:"\nQual frase é período composto?", opcoes:["Pedro correu","Maria estuda","João saiu e voltou","Ana leu"], correta:2, explicacao:"João saiu e voltou tem duas orações."},
+{materia:"Português 8º Ano", assunto:"Período composto", pergunta:"\nUma oração é identificada por:", opcoes:["Verbo","Vírgula","Substantivo","Adjetivo"], correta:0, explicacao:"A oração possui um verbo."},
+{materia:"Português 8º Ano", assunto:"Período composto", pergunta:"\nNa frase 'O professor explicou e os alunos entenderam', temos:", opcoes:["Período simples","Período composto","Sem oração","Sem verbo"], correta:1, explicacao:"Há dois verbos: explicou e entenderam."},
+{materia:"Português 8º Ano", assunto:"Período composto", pergunta:"\nQual frase é período composto?", opcoes:["Maria corre","Pedro estuda","Ana canta","João saiu e comprou pão"], correta:3, explicacao:"Há duas orações: saiu e comprou."},
+{materia:"Português 8º Ano", assunto:"Período composto", pergunta:"\nPeríodo composto possui:", opcoes:["Um verbo","Dois ou mais verbos","Sem verbo","Sem sujeito"], correta:1, explicacao:"Duas ou mais orações possuem dois ou mais verbos."},
+{materia:"Português 8º Ano", assunto:"Período composto", pergunta:"\nNa frase 'Eu fui ao mercado e comprei pão', temos:", opcoes:["Período simples","Período composto","Sem verbo","Sem oração"], correta:1, explicacao:"Fui e comprei são dois verbos."},
+{materia:"Português 8º Ano", assunto:"Período composto", pergunta:"\nQual alternativa apresenta período composto?", opcoes:["Pedro corre","Maria canta","João estuda","Ana saiu e voltou"], correta:3, explicacao:"Ana saiu e voltou possui duas orações."},
+
+{materia:"Português 8º Ano", assunto:"Interpretação e análise de texto", pergunta:"\nInterpretação de texto significa:", opcoes:["Copiar o texto","Entender o sentido do texto","Apagar palavras","Somente ler rápido"], correta:1, explicacao:"Interpretar texto é compreender seu sentido e mensagem."},
+{materia:"Português 8º Ano", assunto:"Interpretação e análise de texto", pergunta:"\nLer um texto e identificar sua ideia principal é:", opcoes:["Ortografia","Interpretação","Pontuação","Acentuação"], correta:1, explicacao:"Identificar a ideia principal faz parte da interpretação."},
+{materia:"Português 8º Ano", assunto:"Interpretação e análise de texto", pergunta:"\nA ideia principal de um texto é:", opcoes:["O assunto mais importante","O título apenas","A última frase","Uma palavra qualquer"], correta:0, explicacao:"A ideia principal é o assunto central do texto."},
+{materia:"Português 8º Ano", assunto:"Interpretação e análise de texto", pergunta:"\nInformações secundárias são:", opcoes:["As mais importantes","Detalhes que ajudam a entender o texto","O título","A pontuação"], correta:1, explicacao:"Informações secundárias complementam a ideia principal."},
+{materia:"Português 8º Ano", assunto:"Interpretação e análise de texto", pergunta:"\nQuando o leitor entende o que o autor quis dizer, ele está:", opcoes:["Decorando","Interpretando","Copiando","Escrevendo"], correta:1, explicacao:"Interpretar é compreender a mensagem do autor."},
+{materia:"Português 8º Ano", assunto:"Interpretação e análise de texto", pergunta:"\nLer atentamente um texto ajuda a:", opcoes:["Confundir","Errar","Compreender melhor","Apagar palavras"], correta:2, explicacao:"A leitura atenta melhora a compreensão."},
+{materia:"Português 8º Ano", assunto:"Interpretação e análise de texto", pergunta:"\nO tema de um texto é:", opcoes:["A pontuação","O assunto tratado","O verbo","O adjetivo"], correta:1, explicacao:"Tema é o assunto do texto."},
+{materia:"Português 8º Ano", assunto:"Interpretação e análise de texto", pergunta:"\nAnalisar um texto é:", opcoes:["Somente copiar","Entender suas partes e significado","Apagar palavras","Ignorar o texto"], correta:1, explicacao:"Analisar é entender estrutura e sentido."},
+{materia:"Português 8º Ano", assunto:"Interpretação e análise de texto", pergunta:"\nPerguntas sobre textos servem para:", opcoes:["Confundir o leitor","Verificar compreensão","Apagar conteúdo","Trocar palavras"], correta:1, explicacao:"Perguntas avaliam a interpretação."},
+{materia:"Português 8º Ano", assunto:"Interpretação e análise de texto", pergunta:"\nPara interpretar bem um texto é importante:", opcoes:["Ler rapidamente","Não prestar atenção","Ler e entender o contexto","Ignorar o título"], correta:2, explicacao:"Entender o contexto ajuda na interpretação."},
+
+
+{materia:"Português 9º Ano", assunto:"Período composto por coordenação", pergunta:"\nPeríodo composto por coordenação é aquele que possui:", opcoes:["Apenas uma oração","Orações independentes entre si","Orações dependentes entre si","Somente verbos auxiliares"], correta:1, explicacao:"No período composto por coordenação, as orações são independentes e não dependem uma da outra."},
+{materia:"Português 9º Ano", assunto:"Período composto por coordenação", pergunta:"\nAs orações coordenadas são chamadas de independentes porque:", opcoes:["Não possuem verbo","Não dependem de outra oração","São sempre curtas","Não possuem sujeito"], correta:1, explicacao:"As orações coordenadas têm sentido completo e não dependem de outra oração."},
+{materia:"Português 9º Ano", assunto:"Período composto por coordenação", pergunta:"\nNa frase 'Estudei muito e passei na prova', a palavra 'e' é:", opcoes:["Pronome","Preposição","Conjunção coordenativa","Verbo"], correta:2, explicacao:"O 'e' liga duas orações independentes, funcionando como conjunção coordenativa aditiva."},
+{materia:"Português 9º Ano", assunto:"Período composto por coordenação", pergunta:"\nAs conjunções coordenativas servem para:", opcoes:["Separar frases","Ligar orações independentes","Substituir verbos","Criar sujeito"], correta:1, explicacao:"As conjunções coordenativas ligam orações independentes dentro de um período composto."},
+{materia:"Português 9º Ano", assunto:"Período composto por coordenação", pergunta:"\nNa frase 'Queria sair, mas estava chovendo', temos uma conjunção:", opcoes:["Aditiva","Alternativa","Adversativa","Conclusiva"], correta:2, explicacao:"A palavra 'mas' indica oposição, sendo uma conjunção coordenativa adversativa."},
+{materia:"Português 9º Ano", assunto:"Período composto por coordenação", pergunta:"\nAs conjunções 'ou', 'ora', 'quer...quer' são:", opcoes:["Adversativas","Alternativas","Conclusivas","Explicativas"], correta:1, explicacao:"Essas conjunções ligam orações indicando alternativas ou opções."},
+{materia:"Português 9º Ano", assunto:"Período composto por coordenação", pergunta:"\nNa frase 'Estudei, portanto passei', a conjunção indica:", opcoes:["Adição","Explicação","Conclusão","Oposição"], correta:2, explicacao:"A palavra 'portanto' indica conclusão entre as orações coordenadas."},
+{materia:"Português 9º Ano", assunto:"Período composto por coordenação", pergunta:"\nA conjunção 'porque' pode ser coordenativa quando indica:", opcoes:["Conclusão","Explicação","Alternativa","Adição"], correta:1, explicacao:"Quando 'porque' explica algo, funciona como conjunção coordenativa explicativa."},
+{materia:"Português 9º Ano", assunto:"Período composto por coordenação", pergunta:"\nQual frase apresenta período composto por coordenação?", opcoes:["Quando cheguei, ele saiu","Se estudar, passará","Estudei e aprendi","Embora chova, irei"], correta:2, explicacao:"A frase 'Estudei e aprendi' possui duas orações independentes ligadas por conjunção coordenativa."},
+{materia:"Português 9º Ano", assunto:"Período composto por coordenação", pergunta:"\nAs orações coordenadas podem ser:", opcoes:["Somente subordinadas","Somente adjetivas","Sindéticas ou assindéticas","Somente verbais"], correta:2, explicacao:"As orações coordenadas podem ser sindéticas (com conjunção) ou assindéticas (sem conjunção)."},
+
+{materia:"Português 9º Ano", assunto:"Período composto por subordinação", pergunta:"\nPeríodo composto por subordinação é aquele que possui:", opcoes:["Orações independentes","Apenas uma oração","Orações que dependem umas das outras","Somente verbos"], correta:2, explicacao:"No período composto por subordinação, uma oração depende da outra para ter sentido completo."},
+{materia:"Português 9º Ano", assunto:"Período composto por subordinação", pergunta:"\nAs orações subordinadas são chamadas assim porque:", opcoes:["São independentes","Dependem da oração principal","Não possuem verbo","São sempre curtas"], correta:1, explicacao:"As orações subordinadas dependem da oração principal para completar o sentido."},
+{materia:"Português 9º Ano", assunto:"Período composto por subordinação", pergunta:"\nNa frase 'Quando cheguei, ele saiu', temos:", opcoes:["Período simples","Período composto por coordenação","Período composto por subordinação","Frase nominal"], correta:2, explicacao:"A oração 'Quando cheguei' depende da oração principal, formando subordinação."},
+{materia:"Português 9º Ano", assunto:"Período composto por subordinação", pergunta:"\nA oração principal é aquela que:", opcoes:["Depende de outra oração","Não possui sentido","Tem sentido completo","É sempre menor"], correta:2, explicacao:"A oração principal tem sentido completo e a subordinada depende dela."},
+{materia:"Português 9º Ano", assunto:"Período composto por subordinação", pergunta:"\nAs conjunções subordinativas servem para:", opcoes:["Separar frases","Ligar orações dependentes","Criar sujeito","Eliminar verbos"], correta:1, explicacao:"As conjunções subordinativas ligam orações dependentes à oração principal."},
+{materia:"Português 9º Ano", assunto:"Período composto por subordinação", pergunta:"\nNa frase 'Se estudar, passará', a palavra 'se' é:", opcoes:["Pronome","Conjunção subordinativa","Verbo","Substantivo"], correta:1, explicacao:"A palavra 'se' introduz uma oração subordinada condicional."},
+{materia:"Português 9º Ano", assunto:"Período composto por subordinação", pergunta:"\nA oração subordinada sempre:", opcoes:["Tem sentido sozinha","Depende da oração principal","É coordenada","Não possui verbo"], correta:1, explicacao:"A oração subordinada precisa da oração principal para completar o sentido."},
+{materia:"Português 9º Ano", assunto:"Período composto por subordinação", pergunta:"\nQual frase apresenta subordinação?", opcoes:["Estudei e passei","Cheguei e sentei","Quando chove, fico em casa","Saí mas voltei"], correta:2, explicacao:"A oração 'Quando chove' depende da oração principal, caracterizando subordinação."},
+{materia:"Português 9º Ano", assunto:"Período composto por subordinação", pergunta:"\nNo período composto por subordinação existem:", opcoes:["Somente conjunções coordenativas","Orações independentes","Orações principal e subordinada","Somente verbos auxiliares"], correta:2, explicacao:"Esse tipo de período possui oração principal e oração subordinada."},
+{materia:"Português 9º Ano", assunto:"Período composto por subordinação", pergunta:"\nA subordinação ocorre quando:", opcoes:["As orações são independentes","Há apenas um verbo","Uma oração depende da outra","Não há conjunção"], correta:2, explicacao:"A subordinação acontece quando uma oração depende da outra para ter sentido completo."},
+
+{materia:"Português 9º Ano", assunto:"Orações subordinadas", pergunta:"\nAs orações subordinadas são aquelas que:", opcoes:["São independentes","Dependem de outra oração","Não possuem verbo","São sempre coordenadas"], correta:1, explicacao:"Orações subordinadas dependem de outra oração para ter sentido completo."},
+{materia:"Português 9º Ano", assunto:"Orações subordinadas", pergunta:"\nAs orações subordinadas podem ser:", opcoes:["Somente adjetivas","Somente adverbiais","Substantivas, adjetivas e adverbiais","Somente coordenadas"], correta:2, explicacao:"As orações subordinadas são classificadas em substantivas, adjetivas e adverbiais."},
+{materia:"Português 9º Ano", assunto:"Orações subordinadas", pergunta:"\nNa frase 'Espero que você venha', a oração 'que você venha' é:", opcoes:["Oração principal","Oração subordinada","Oração coordenada","Frase nominal"], correta:1, explicacao:"A oração depende da principal 'Espero', sendo subordinada."},
+{materia:"Português 9º Ano", assunto:"Orações subordinadas", pergunta:"\nA oração subordinada substantiva exerce função de:", opcoes:["Advérbio","Substantivo","Adjetivo","Verbo"], correta:1, explicacao:"A oração subordinada substantiva exerce função de substantivo na frase."},
+{materia:"Português 9º Ano", assunto:"Orações subordinadas", pergunta:"\nA oração subordinada adjetiva caracteriza:", opcoes:["O verbo","O substantivo","O advérbio","O pronome"], correta:1, explicacao:"A oração subordinada adjetiva caracteriza ou explica um substantivo."},
+{materia:"Português 9º Ano", assunto:"Orações subordinadas", pergunta:"\nA oração subordinada adverbial indica:", opcoes:["Característica","Ação","Circunstância","Substantivo"], correta:2, explicacao:"A oração subordinada adverbial indica circunstâncias como tempo, causa, condição, etc."},
+{materia:"Português 9º Ano", assunto:"Orações subordinadas", pergunta:"\nNa frase 'Quando chove, fico em casa', a oração subordinada é:", opcoes:["Fico em casa","Quando chove","Chove em casa","Fico quando"], correta:1, explicacao:"A oração 'Quando chove' depende da oração principal."},
+{materia:"Português 9º Ano", assunto:"Orações subordinadas", pergunta:"\nA palavra 'que' geralmente introduz:", opcoes:["Orações coordenadas","Orações subordinadas","Frases nominais","Pontuação"], correta:1, explicacao:"A conjunção 'que' normalmente introduz orações subordinadas."},
+{materia:"Português 9º Ano", assunto:"Orações subordinadas", pergunta:"\nQual frase possui oração subordinada adverbial?", opcoes:["Estudei e passei","Quero que você venha","Quando cheguei, ele saiu","Pedro e João estudaram"], correta:2, explicacao:"A oração 'Quando cheguei' indica tempo, sendo subordinada adverbial."},
+{materia:"Português 9º Ano", assunto:"Orações subordinadas", pergunta:"\nAs orações subordinadas são ligadas à principal por:", opcoes:["Conjunções subordinativas","Pontuação apenas","Verbos auxiliares","Pronomes pessoais"], correta:0, explicacao:"As orações subordinadas são ligadas à principal por conjunções subordinativas."},
+
+{materia:"Português 9º Ano", assunto:"Conectivos", pergunta:"\nConectivos são palavras que:", opcoes:["Criam frases","Ligam ideias no texto","Substituem verbos","Formam sujeito"], correta:1, explicacao:"Conectivos servem para ligar ideias e organizar o texto."},
+{materia:"Português 9º Ano", assunto:"Conectivos", pergunta:"\nA palavra 'portanto' é um conectivo de:", opcoes:["Conclusão","Oposição","Tempo","Lugar"], correta:0, explicacao:"'Portanto' indica conclusão entre ideias."},
+{materia:"Português 9º Ano", assunto:"Conectivos", pergunta:"\nO conectivo 'mas' indica:", opcoes:["Adição","Conclusão","Oposição","Explicação"], correta:2, explicacao:"'Mas' é um conectivo adversativo que indica oposição."},
+{materia:"Português 9º Ano", assunto:"Conectivos", pergunta:"\nO conectivo 'e' expressa:", opcoes:["Conclusão","Oposição","Adição","Condição"], correta:2, explicacao:"'E' é um conectivo aditivo que indica soma de ideias."},
+{materia:"Português 9º Ano", assunto:"Conectivos", pergunta:"\nA palavra 'porque' pode indicar:", opcoes:["Causa ou explicação","Somente tempo","Lugar","Adição"], correta:0, explicacao:"'Porque' geralmente indica causa ou explicação."},
+{materia:"Português 9º Ano", assunto:"Conectivos", pergunta:"\nO conectivo 'ou' indica:", opcoes:["Adição","Alternativa","Conclusão","Explicação"], correta:1, explicacao:"'Ou' apresenta alternativa entre ideias."},
+{materia:"Português 9º Ano", assunto:"Conectivos", pergunta:"\nNa frase 'Estudei, então passei', o conectivo indica:", opcoes:["Oposição","Explicação","Conclusão","Alternativa"], correta:2, explicacao:"'Então' indica conclusão entre as orações."},
+{materia:"Português 9º Ano", assunto:"Conectivos", pergunta:"\nO conectivo 'embora' indica:", opcoes:["Adição","Concessão","Conclusão","Explicação"], correta:1, explicacao:"'Embora' indica concessão, mostrando contraste de ideias."},
+{materia:"Português 9º Ano", assunto:"Conectivos", pergunta:"\nQual palavra é um conectivo?", opcoes:["Casa","Rapidamente","Mas","Livro"], correta:2, explicacao:"'Mas' é uma conjunção conectiva que liga ideias."},
+{materia:"Português 9º Ano", assunto:"Conectivos", pergunta:"\nOs conectivos ajudam principalmente na:", opcoes:["Pontuação","Ortografia","Organização do texto","Acentuação"], correta:2, explicacao:"Os conectivos ajudam na organização e ligação das ideias do texto."},
+
+{materia:"Português 9º Ano", assunto:"Pontuação avançada", pergunta:"\nA vírgula é usada principalmente para:", opcoes:["Separar ideias e elementos da frase","Finalizar frases","Substituir verbos","Indicar pergunta"], correta:0, explicacao:"A vírgula serve para separar termos e organizar a leitura da frase."},
+{materia:"Português 9º Ano", assunto:"Pontuação avançada", pergunta:"\nO ponto e vírgula (;) é usado para:", opcoes:["Separar frases longas relacionadas","Encerrar texto","Indicar dúvida","Separar sílabas"], correta:0, explicacao:"O ponto e vírgula separa orações relacionadas dentro do mesmo período."},
+{materia:"Português 9º Ano", assunto:"Pontuação avançada", pergunta:"\nOs dois pontos (:) são usados para:", opcoes:["Indicar pausa pequena","Introduzir explicação ou fala","Encerrar frase","Indicar dúvida"], correta:1, explicacao:"Os dois pontos introduzem explicações, exemplos ou falas."},
+{materia:"Português 9º Ano", assunto:"Pontuação avançada", pergunta:"\nO travessão é usado principalmente para:", opcoes:["Indicar pergunta","Encerrar frase","Marcar fala de personagem","Separar sílabas"], correta:2, explicacao:"O travessão é usado para indicar fala no discurso direto."},
+{materia:"Português 9º Ano", assunto:"Pontuação avançada", pergunta:"\nAs aspas são usadas para:", opcoes:["Separar frases","Indicar citação ou fala","Encerrar texto","Substituir vírgula"], correta:1, explicacao:"As aspas indicam citações ou falas destacadas."},
+{materia:"Português 9º Ano", assunto:"Pontuação avançada", pergunta:"\nO ponto final serve para:", opcoes:["Indicar pergunta","Encerrar frase declarativa","Separar termos","Indicar surpresa"], correta:1, explicacao:"O ponto final encerra frases declarativas."},
+{materia:"Português 9º Ano", assunto:"Pontuação avançada", pergunta:"\nO ponto de interrogação (?) indica:", opcoes:["Ordem","Pergunta","Conclusão","Explicação"], correta:1, explicacao:"O ponto de interrogação é usado em frases interrogativas."},
+{materia:"Português 9º Ano", assunto:"Pontuação avançada", pergunta:"\nO ponto de exclamação (!) indica:", opcoes:["Pergunta","Dúvida","Emoção ou surpresa","Explicação"], correta:2, explicacao:"O ponto de exclamação expressa emoção, surpresa ou ordem."},
+{materia:"Português 9º Ano", assunto:"Pontuação avançada", pergunta:"\nNa frase 'João, venha aqui', a vírgula separa:", opcoes:["Sujeito","Vocativo","Verbo","Objeto"], correta:1, explicacao:"A vírgula separa o vocativo 'João'."},
+{materia:"Português 9º Ano", assunto:"Pontuação avançada", pergunta:"\nA vírgula não deve ser usada entre:", opcoes:["Vocativo","Elementos de enumeração","Sujeito e verbo","Aposto"], correta:2, explicacao:"Não se deve separar sujeito e verbo com vírgula."},
+
+{materia:"Português 9º Ano", assunto:"Concordância avançada", pergunta:"\nConcordância verbal ocorre quando:", opcoes:["O verbo concorda com o sujeito","O verbo concorda com o objeto","O verbo concorda com o advérbio","O verbo concorda com a vírgula"], correta:0, explicacao:"Na concordância verbal, o verbo deve concordar com o sujeito da frase."},
+{materia:"Português 9º Ano", assunto:"Concordância avançada", pergunta:"\nNa frase 'Os alunos estudaram', o verbo está:", opcoes:["No singular","No plural","No infinitivo","No gerúndio"], correta:1, explicacao:"O verbo 'estudaram' está no plural para concordar com 'alunos'."},
+{materia:"Português 9º Ano", assunto:"Concordância avançada", pergunta:"\nNa frase 'A menina chegou', o verbo concorda com:", opcoes:["O objeto","O sujeito","O advérbio","O complemento"], correta:1, explicacao:"O verbo 'chegou' concorda com o sujeito 'menina'."},
+{materia:"Português 9º Ano", assunto:"Concordância avançada", pergunta:"\nConcordância nominal ocorre quando:", opcoes:["O verbo concorda com o sujeito","O adjetivo concorda com o substantivo","O advérbio concorda com o verbo","O pronome concorda com a vírgula"], correta:1, explicacao:"Na concordância nominal, adjetivos e artigos concordam com o substantivo."},
+{materia:"Português 9º Ano", assunto:"Concordância avançada", pergunta:"\nNa frase 'As casas são bonitas', a palavra 'bonitas' concorda com:", opcoes:["Casas","São","As","Frase"], correta:0, explicacao:"O adjetivo 'bonitas' concorda com o substantivo 'casas'."},
+{materia:"Português 9º Ano", assunto:"Concordância avançada", pergunta:"\nNa frase 'Havia muitos alunos', o verbo 'havia' fica no singular porque:", opcoes:["Não tem sujeito","Está no plural","É verbo auxiliar","É advérbio"], correta:0, explicacao:"O verbo 'haver' com sentido de existir não varia."},
+{materia:"Português 9º Ano", assunto:"Concordância avançada", pergunta:"\nNa frase 'Faz dois anos', o verbo 'faz' fica:", opcoes:["No plural","No singular","No infinitivo","No futuro"], correta:1, explicacao:"O verbo 'fazer' indicando tempo não varia e fica no singular."},
+{materia:"Português 9º Ano", assunto:"Concordância avançada", pergunta:"\nNa frase 'Os livros e os cadernos sumiram', o verbo está no plural porque:", opcoes:["Há dois sujeitos","Há um sujeito","Não há sujeito","É regra opcional"], correta:0, explicacao:"O verbo concorda com os dois sujeitos, ficando no plural."},
+{materia:"Português 9º Ano", assunto:"Concordância avançada", pergunta:"\nNa frase 'É proibida a entrada', a palavra 'proibida' concorda com:", opcoes:["Entrada","É","Frase","Verbo"], correta:0, explicacao:"O adjetivo concorda com o substantivo 'entrada'."},
+{materia:"Português 9º Ano", assunto:"Concordância avançada", pergunta:"\nQual frase está correta?", opcoes:["Houveram problemas","Existiu problemas","Houve problemas","Houveram solução"], correta:2, explicacao:"O verbo 'haver' no sentido de existir fica no singular: 'Houve problemas'."},
+
+{materia:"Português 9º Ano", assunto:"Regência verbal e nominal", pergunta:"\nRegência verbal estuda:", opcoes:["A concordância do verbo","A relação entre o verbo e seus complementos","A pontuação","A acentuação"], correta:1, explicacao:"Regência verbal analisa a relação do verbo com seus complementos e preposições."},
+{materia:"Português 9º Ano", assunto:"Regência verbal e nominal", pergunta:"\nNa frase 'Gosto de música', o verbo 'gostar' exige:", opcoes:["Preposição de","Preposição em","Preposição para","Sem preposição"], correta:0, explicacao:"O verbo 'gostar' exige a preposição 'de'."},
+{materia:"Português 9º Ano", assunto:"Regência verbal e nominal", pergunta:"\nNa frase 'Assisti ao filme', o verbo 'assistir' exige:", opcoes:["Preposição em","Preposição a","Preposição de","Sem preposição"], correta:1, explicacao:"O verbo 'assistir' no sentido de ver exige a preposição 'a'."},
+{materia:"Português 9º Ano", assunto:"Regência verbal e nominal", pergunta:"\nRegência nominal estuda:", opcoes:["Relação entre nomes e complementos","Somente verbos","Pontuação","Concordância verbal"], correta:0, explicacao:"Regência nominal analisa a relação entre nomes e seus complementos."},
+{materia:"Português 9º Ano", assunto:"Regência verbal e nominal", pergunta:"\nNa frase 'Tenho medo de escuro', o substantivo 'medo' exige:", opcoes:["Preposição a","Preposição de","Preposição em","Preposição para"], correta:1, explicacao:"O substantivo 'medo' exige a preposição 'de'."},
+{materia:"Português 9º Ano", assunto:"Regência verbal e nominal", pergunta:"\nNa frase 'Obedeço aos pais', o verbo exige:", opcoes:["Preposição de","Preposição em","Preposição a","Sem preposição"], correta:2, explicacao:"O verbo 'obedecer' exige a preposição 'a'."},
+{materia:"Português 9º Ano", assunto:"Regência verbal e nominal", pergunta:"\nNa frase 'Preciso de ajuda', o verbo 'precisar' exige:", opcoes:["Preposição de","Preposição a","Preposição em","Sem preposição"], correta:0, explicacao:"O verbo 'precisar' exige a preposição 'de'."},
+{materia:"Português 9º Ano", assunto:"Regência verbal e nominal", pergunta:"\nNa frase 'Tenho amor à natureza', a regência é:", opcoes:["Verbal","Nominal","Pontual","Adverbial"], correta:1, explicacao:"O substantivo 'amor' exige a preposição 'a', sendo regência nominal."},
+{materia:"Português 9º Ano", assunto:"Regência verbal e nominal", pergunta:"\nQual frase está correta?", opcoes:["Assisti o filme","Assisti ao filme","Assisti no filme","Assisti de filme"], correta:1, explicacao:"O correto é 'Assisti ao filme', pois o verbo exige preposição 'a'."},
+{materia:"Português 9º Ano", assunto:"Regência verbal e nominal", pergunta:"\nA regência está relacionada principalmente ao uso de:", opcoes:["Acentos","Preposições","Pontuação","Pronomes"], correta:1, explicacao:"Regência trata do uso correto das preposições com verbos e nomes."},
+
+{materia:"Português 9º Ano", assunto:"Crase aprofundada", pergunta:"\nCrase é a junção de:", opcoes:["Preposição a + artigo a","Verbo + substantivo","Pronome + verbo","Adjetivo + substantivo"], correta:0, explicacao:"Crase é a fusão da preposição 'a' com o artigo feminino 'a'."},
+{materia:"Português 9º Ano", assunto:"Crase aprofundada", pergunta:"\nNa frase 'Vou à escola', ocorre crase porque:", opcoes:["Há verbo","Há preposição a + artigo a","Há sujeito feminino","Há advérbio"], correta:1, explicacao:"O verbo 'ir' exige preposição 'a' e 'escola' aceita artigo feminino."},
+{materia:"Português 9º Ano", assunto:"Crase aprofundada", pergunta:"\nNa frase 'Entreguei o livro a Maria', a crase:", opcoes:["Deve ser usada","É obrigatória","Não ocorre","É opcional"], correta:2, explicacao:"Não há artigo antes de 'Maria', portanto não ocorre crase."},
+{materia:"Português 9º Ano", assunto:"Crase aprofundada", pergunta:"\nNa frase 'Fui à feira', a crase ocorre porque:", opcoes:["Há advérbio","Há preposição e artigo feminino","Há verbo auxiliar","Há pronome"], correta:1, explicacao:"O verbo exige preposição e 'feira' aceita artigo feminino."},
+{materia:"Português 9º Ano", assunto:"Crase aprofundada", pergunta:"\nAntes de palavras masculinas a crase:", opcoes:["Ocorre sempre","Não ocorre","É obrigatória","É opcional"], correta:1, explicacao:"Crase não ocorre antes de palavras masculinas."},
+{materia:"Português 9º Ano", assunto:"Crase aprofundada", pergunta:"\nNa frase 'Vou a pé', a crase:", opcoes:["Ocorre","É obrigatória","Não ocorre","É opcional"], correta:2, explicacao:"Não há artigo feminino antes de 'pé'."},
+{materia:"Português 9º Ano", assunto:"Crase aprofundada", pergunta:"\nNa frase 'Entreguei à professora', a crase indica:", opcoes:["Verbo","Artigo masculino","Preposição + artigo feminino","Advérbio"], correta:2, explicacao:"Há preposição 'a' e artigo feminino 'a'."},
+{materia:"Português 9º Ano", assunto:"Crase aprofundada", pergunta:"\nAntes de verbos a crase:", opcoes:["Ocorre","Não ocorre","É obrigatória","É opcional"], correta:1, explicacao:"Não se usa crase antes de verbos."},
+{materia:"Português 9º Ano", assunto:"Crase aprofundada", pergunta:"\nNa frase 'Refiro-me àquela aluna', a crase ocorre porque:", opcoes:["Há advérbio","Há preposição e pronome demonstrativo","Há verbo auxiliar","Não há artigo"], correta:1, explicacao:"O verbo 'referir-se' exige preposição 'a' e o pronome demonstrativo 'aquela' admite a fusão, formando 'àquela'."},
+{materia:"Português 9º Ano", assunto:"Crase aprofundada", pergunta:"\nQual frase está correta?", opcoes:["Vou a escola","Vou à escola","Vou a à escola","Vou aà escola"], correta:1, explicacao:"O correto é 'Vou à escola' com crase."},
+
+{materia:"Português 9º Ano", assunto:"Figuras de linguagem", pergunta:"\nFiguras de linguagem são:", opcoes:["Erros gramaticais","Recursos expressivos da linguagem","Tipos de pontuação","Regras de acentuação"], correta:1, explicacao:"Figuras de linguagem são recursos que dão mais expressividade ao texto."},
+{materia:"Português 9º Ano", assunto:"Figuras de linguagem", pergunta:"\nA metáfora é:", opcoes:["Comparação com conectivo","Comparação implícita","Exagero","Repetição"], correta:1, explicacao:"Metáfora é uma comparação implícita, sem conectivo."},
+{materia:"Português 9º Ano", assunto:"Figuras de linguagem", pergunta:"\nA comparação é caracterizada pelo uso de:", opcoes:["Exagero","Conectivos como 'como'","Repetição","Ironia"], correta:1, explicacao:"A comparação usa conectivos como 'como', 'tal qual'."},
+{materia:"Português 9º Ano", assunto:"Figuras de linguagem", pergunta:"\nA hipérbole é:", opcoes:["Exagero","Comparação","Ironia","Repetição"], correta:0, explicacao:"Hipérbole é o exagero na expressão."},
+{materia:"Português 9º Ano", assunto:"Figuras de linguagem", pergunta:"\nA ironia ocorre quando:", opcoes:["Se diz o contrário do que se pensa","Há exagero","Há comparação","Há repetição"], correta:0, explicacao:"Ironia é dizer o contrário do que se quer expressar."},
+{materia:"Português 9º Ano", assunto:"Figuras de linguagem", pergunta:"\nA personificação ocorre quando:", opcoes:["Objeto ganha características humanas","Há exagero","Há comparação","Há repetição"], correta:0, explicacao:"Personificação é dar características humanas a seres inanimados."},
+{materia:"Português 9º Ano", assunto:"Figuras de linguagem", pergunta:"\nNa frase 'Estou morrendo de fome', temos:", opcoes:["Comparação","Hipérbole","Ironia","Metáfora"], correta:1, explicacao:"Há exagero, caracterizando hipérbole."},
+{materia:"Português 9º Ano", assunto:"Figuras de linguagem", pergunta:"\nNa frase 'Seus olhos são estrelas', temos:", opcoes:["Comparação","Hipérbole","Metáfora","Ironia"], correta:2, explicacao:"Há uma comparação implícita, caracterizando metáfora."},
+{materia:"Português 9º Ano", assunto:"Figuras de linguagem", pergunta:"\nNa frase 'O vento cantava', temos:", opcoes:["Metáfora","Personificação","Hipérbole","Ironia"], correta:1, explicacao:"O vento recebe característica humana, sendo personificação."},
+{materia:"Português 9º Ano", assunto:"Figuras de linguagem", pergunta:"\nAs figuras de linguagem são usadas para:", opcoes:["Criar erros","Deixar o texto mais expressivo","Eliminar palavras","Simplificar pontuação"], correta:1, explicacao:"Figuras de linguagem aumentam a expressividade e o sentido do texto."},
+
+{materia:"Português 9º Ano", assunto:"Funções da linguagem", pergunta:"\nAs funções da linguagem servem para:", opcoes:["Separar frases","Identificar o objetivo da comunicação","Criar regras gramaticais","Eliminar palavras"], correta:1, explicacao:"As funções da linguagem mostram o objetivo da comunicação no texto."},
+{materia:"Português 9º Ano", assunto:"Funções da linguagem", pergunta:"\nA função referencial tem como objetivo:", opcoes:["Expressar emoções","Convencer o leitor","Informar sobre algo","Estabelecer contato"], correta:2, explicacao:"A função referencial transmite informações de forma objetiva."},
+{materia:"Português 9º Ano", assunto:"Funções da linguagem", pergunta:"\nA função emotiva está relacionada a:", opcoes:["Sentimentos do emissor","Informações objetivas","Regras gramaticais","Pontuação"], correta:0, explicacao:"A função emotiva expressa sentimentos e opiniões do emissor."},
+{materia:"Português 9º Ano", assunto:"Funções da linguagem", pergunta:"\nA função conativa tem como objetivo:", opcoes:["Informar","Expressar sentimentos","Convencer ou influenciar o receptor","Criar poesia"], correta:2, explicacao:"A função conativa busca convencer ou influenciar o receptor."},
+{materia:"Português 9º Ano", assunto:"Funções da linguagem", pergunta:"\nA função fática serve para:", opcoes:["Informar","Estabelecer contato","Convencer","Narrar"], correta:1, explicacao:"A função fática verifica ou mantém o contato na comunicação."},
+{materia:"Português 9º Ano", assunto:"Funções da linguagem", pergunta:"\nA função poética valoriza:", opcoes:["A forma da mensagem","A informação","O receptor","O contexto"], correta:0, explicacao:"A função poética valoriza a forma e a estética da mensagem."},
+{materia:"Português 9º Ano", assunto:"Funções da linguagem", pergunta:"\nA função metalinguística ocorre quando:", opcoes:["O texto fala sobre si mesmo","O texto informa","O texto convence","O texto narra"], correta:0, explicacao:"A função metalinguística ocorre quando a linguagem explica a própria linguagem."},
+{materia:"Português 9º Ano", assunto:"Funções da linguagem", pergunta:"\nQual função é usada em propagandas?", opcoes:["Referencial","Emotiva","Conativa","Fática"], correta:2, explicacao:"A propaganda busca convencer, por isso usa função conativa."},
+{materia:"Português 9º Ano", assunto:"Funções da linguagem", pergunta:"\nNa frase 'Alô, está me ouvindo?', temos função:", opcoes:["Poética","Referencial","Fática","Conativa"], correta:2, explicacao:"A frase busca manter o contato na comunicação."},
+{materia:"Português 9º Ano", assunto:"Funções da linguagem", pergunta:"\nQual função aparece em textos informativos?", opcoes:["Referencial","Poética","Emotiva","Fática"], correta:0, explicacao:"Textos informativos usam função referencial."},
+
+{materia:"Português 9º Ano", assunto:"Produção textual (redação)", pergunta:"\nProdução textual é:", opcoes:["Escrever textos com organização e sentido","Copiar textos","Somente ler textos","Corrigir palavras"], correta:0, explicacao:"Produção textual é a criação de textos organizados e com sentido."},
+{materia:"Português 9º Ano", assunto:"Produção textual (redação)", pergunta:"\nUma redação deve ter:", opcoes:["Somente introdução","Introdução, desenvolvimento e conclusão","Somente conclusão","Somente título"], correta:1, explicacao:"Uma redação completa possui introdução, desenvolvimento e conclusão."},
+{materia:"Português 9º Ano", assunto:"Produção textual (redação)", pergunta:"\nA introdução serve para:", opcoes:["Finalizar o texto","Dar opinião final","Apresentar o tema","Encerrar ideias"], correta:2, explicacao:"A introdução apresenta o tema que será discutido."},
+{materia:"Português 9º Ano", assunto:"Produção textual (redação)", pergunta:"\nO desenvolvimento serve para:", opcoes:["Encerrar o texto","Criar título","Separar frases","Apresentar argumentos"], correta:3, explicacao:"O desenvolvimento apresenta argumentos e explicações sobre o tema."},
+{materia:"Português 9º Ano", assunto:"Produção textual (redação)", pergunta:"\nA conclusão serve para:", opcoes:["Encerrar o texto","Apresentar o tema","Criar introdução","Separar frases"], correta:0, explicacao:"A conclusão finaliza e resume as ideias do texto."},
+{materia:"Português 9º Ano", assunto:"Produção textual (redação)", pergunta:"\nUm texto argumentativo deve:", opcoes:["Narrar histórias","Defender uma ideia","Descrever objetos","Somente informar"], correta:1, explicacao:"O texto argumentativo defende uma ideia com argumentos."},
+{materia:"Português 9º Ano", assunto:"Produção textual (redação)", pergunta:"\nCoerência na redação significa:", opcoes:["Erros gramaticais","Uso de vírgula","Sentido lógico do texto","Uso de acento"], correta:2, explicacao:"Coerência é o sentido lógico das ideias no texto."},
+{materia:"Português 9º Ano", assunto:"Produção textual (redação)", pergunta:"\nCoesão na redação significa:", opcoes:["Pontuação","Ortografia","Acentuação","Ligação entre ideias"], correta:3, explicacao:"Coesão é a ligação entre partes do texto."},
+{materia:"Português 9º Ano", assunto:"Produção textual (redação)", pergunta:"\nO uso de conectivos na redação serve para:", opcoes:["Organizar ideias","Separar sílabas","Criar erros","Eliminar palavras"], correta:0, explicacao:"Conectivos ajudam a organizar e ligar as ideias."},
+{materia:"Português 9º Ano", assunto:"Produção textual (redação)", pergunta:"\nUma boa redação deve ter:", opcoes:["Desorganização","Clareza e organização","Somente frases longas","Somente frases curtas"], correta:1, explicacao:"Uma boa redação deve ser clara, organizada e coerente."},
+
+{materia:"Português 9º Ano", assunto:"Coesão e coerência", pergunta:"\nCoesão textual é:", opcoes:["Ligação entre partes do texto","Sentido lógico do texto","Uso de acentos","Uso de pontuação"], correta:0, explicacao:"Coesão é a ligação entre palavras, frases e parágrafos do texto."},
+{materia:"Português 9º Ano", assunto:"Coesão e coerência", pergunta:"\nCoerência textual significa:", opcoes:["Uso de vírgula","Sentido lógico do texto","Separação de frases","Uso de conectivos"], correta:1, explicacao:"Coerência é o sentido lógico e compreensível do texto."},
+{materia:"Português 9º Ano", assunto:"Coesão e coerência", pergunta:"\nOs conectivos ajudam na:", opcoes:["Pontuação","Acentuação","Ligação das ideias","Ortografia"], correta:2, explicacao:"Os conectivos ligam ideias e melhoram a coesão textual."},
+{materia:"Português 9º Ano", assunto:"Coesão e coerência", pergunta:"\nUm texto coerente é aquele que:", opcoes:["Não tem sentido","Tem erros","Tem frases curtas","Tem sentido lógico"], correta:3, explicacao:"Um texto coerente apresenta ideias organizadas e com sentido."},
+{materia:"Português 9º Ano", assunto:"Coesão e coerência", pergunta:"\nA repetição de palavras pode prejudicar:", opcoes:["A coesão","A ortografia","A pontuação","A acentuação"], correta:0, explicacao:"Repetição excessiva pode prejudicar a coesão do texto."},
+{materia:"Português 9º Ano", assunto:"Coesão e coerência", pergunta:"\nPronomes podem ajudar na:", opcoes:["Acentuação","Coesão","Pontuação","Ortografia"], correta:1, explicacao:"Pronomes evitam repetição e ajudam na coesão textual."},
+{materia:"Português 9º Ano", assunto:"Coesão e coerência", pergunta:"\nUm texto sem coerência:", opcoes:["Tem sentido","É organizado","Fica sem sentido","É correto"], correta:2, explicacao:"Sem coerência, o texto perde o sentido lógico."},
+{materia:"Português 9º Ano", assunto:"Coesão e coerência", pergunta:"\nA coesão é responsável por:", opcoes:["Ortografia","Acentuação","Separação de sílabas","Ligação das partes do texto"], correta:3, explicacao:"A coesão liga palavras, frases e parágrafos."},
+{materia:"Português 9º Ano", assunto:"Coesão e coerência", pergunta:"\nO uso correto de conectivos melhora:", opcoes:["A coesão","A vírgula","O acento","A sílaba"], correta:0, explicacao:"Conectivos ajudam na ligação das ideias e melhoram a coesão."},
+{materia:"Português 9º Ano", assunto:"Coesão e coerência", pergunta:"\nUm texto bem organizado precisa de:", opcoes:["Somente pontuação","Coesão e coerência","Somente frases longas","Somente adjetivos"], correta:1, explicacao:"Coesão e coerência garantem organização e sentido ao texto."},
+
+
+
+{materia:"Interpretação de texto", assunto:"Interpretação 6º ano", pergunta:"\nTexto: Lucas foi ao parque jogar bola com seus amigos. Depois, eles tomaram sorvete. O que Lucas fez depois de jogar bola?", opcoes:["Tomou sorvete","Foi dormir","Foi estudar","Voltou para casa"], correta:0, explicacao:"O texto diz que depois de jogar bola eles tomaram sorvete."},
+{materia:"Interpretação de texto", assunto:"Interpretação 6º ano", pergunta:"\nTexto: A professora pediu silêncio para que todos pudessem fazer a prova. Por que a professora pediu silêncio?", opcoes:["Para brincar","Para fazer a prova","Para sair da sala","Para conversar"], correta:1, explicacao:"Ela pediu silêncio para que todos pudessem fazer a prova."},
+{materia:"Interpretação de texto", assunto:"Interpretação 6º ano", pergunta:"\nTexto: O gato subiu no telhado para fugir do cachorro. Por que o gato subiu no telhado?", opcoes:["Para dormir","Para brincar","Para fugir do cachorro","Para comer"], correta:2, explicacao:"O texto informa que o gato subiu no telhado para fugir do cachorro."},
+{materia:"Interpretação de texto", assunto:"Interpretação 6º ano", pergunta:"\nTexto: Ana estuda todos os dias para tirar boas notas. O que Ana quer conseguir?", opcoes:["Brincar mais","Viajar","Dormir cedo","Boas notas"], correta:3, explicacao:"Ela estuda para tirar boas notas."},
+{materia:"Interpretação de texto", assunto:"Interpretação 6º ano", pergunta:"\nTexto: Pedro esqueceu o guarda-chuva e se molhou na chuva. O que aconteceu com Pedro?", opcoes:["Se molhou","Ficou seco","Dormiu","Comeu"], correta:0, explicacao:"Ele esqueceu o guarda-chuva e se molhou na chuva."},
+{materia:"Interpretação de texto", assunto:"Interpretação 6º ano", pergunta:"\nInterpretar um texto significa:", opcoes:["Copiar o texto","Entender o que ele diz","Apagar o texto","Ignorar o texto"], correta:1, explicacao:"Interpretar é compreender o sentido do texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 6º ano", pergunta:"\nA ideia principal de um texto é:", opcoes:["O título","A pontuação","O assunto principal","O nome do autor"], correta:2, explicacao:"Ideia principal é o assunto central do texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 6º ano", pergunta:"\nLer com atenção ajuda a:", opcoes:["Dormir","Esquecer","Brincar","Entender o texto"], correta:3, explicacao:"Ler com atenção melhora a compreensão do texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 6º ano", pergunta:"\nQuando lemos um texto devemos:", opcoes:["Prestar atenção","Ignorar palavras","Pular frases","Fechar o livro"], correta:0, explicacao:"Prestar atenção ajuda a entender o texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 6º ano", pergunta:"\nO objetivo da interpretação de texto é:", opcoes:["Fazer contas","Compreender a mensagem do texto","Desenhar","Dormir"], correta:1, explicacao:"Interpretar é compreender a mensagem do texto."},
+
+{materia:"Interpretação de texto", assunto:"Interpretação 7º ano", pergunta:"\nTexto: João estudou bastante para a prova de história e conseguiu uma boa nota. O que ajudou João a tirar boa nota?", opcoes:["Estudar bastante","Dormir cedo","Brincar muito","Faltar aula"], correta:0, explicacao:"O texto informa que João estudou bastante e por isso conseguiu boa nota."},
+{materia:"Interpretação de texto", assunto:"Interpretação 7º ano", pergunta:"\nTexto: Maria gosta de ler porque aprende coisas novas todos os dias. Por que Maria gosta de ler?", opcoes:["Porque é obrigatório","Porque aprende coisas novas","Porque não gosta de estudar","Porque quer dormir"], correta:1, explicacao:"O texto diz que Maria gosta de ler porque aprende coisas novas."},
+{materia:"Interpretação de texto", assunto:"Interpretação 7º ano", pergunta:"\nTexto: O sol estava muito forte, por isso Pedro usou boné. Por que Pedro usou boné?", opcoes:["Porque estava frio","Porque estava chovendo","Porque o sol estava forte","Porque estava com sono"], correta:2, explicacao:"Pedro usou boné por causa do sol forte."},
+{materia:"Interpretação de texto", assunto:"Interpretação 7º ano", pergunta:"\nTexto: Ana treinou corrida todos os dias e venceu a competição. O que aconteceu com Ana?", opcoes:["Perdeu a corrida","Desistiu","Caiu","Venceu a competição"], correta:3, explicacao:"O texto afirma que Ana treinou e venceu a competição."},
+{materia:"Interpretação de texto", assunto:"Interpretação 7º ano", pergunta:"\nTexto: Carlos levou um casaco porque a noite estava fria. Por que Carlos levou casaco?", opcoes:["Porque estava frio","Porque estava quente","Porque estava chovendo","Porque estava com fome"], correta:0, explicacao:"O texto informa que ele levou casaco porque estava frio."},
+{materia:"Interpretação de texto", assunto:"Interpretação 7º ano", pergunta:"\nA ideia principal de um texto é:", opcoes:["O nome do autor","O assunto mais importante","A última frase","A pontuação"], correta:1, explicacao:"A ideia principal é o assunto mais importante do texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 7º ano", pergunta:"\nInferir em um texto significa:", opcoes:["Copiar o texto","Ignorar o texto","Entender algo que não está explícito","Apagar o texto"], correta:2, explicacao:"Inferir é compreender uma informação que está implícita no texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 7º ano", pergunta:"\nUm texto bem interpretado é aquele que:", opcoes:["Tem desenhos","É longo","Tem muitas palavras difíceis","É compreendido pelo leitor"], correta:3, explicacao:"Interpretar é compreender o texto corretamente."},
+{materia:"Interpretação de texto", assunto:"Interpretação 7º ano", pergunta:"\nLer atentamente ajuda a:", opcoes:["Entender melhor o texto","Esquecer o texto","Dormir","Pular partes"], correta:0, explicacao:"Ler com atenção melhora a compreensão."},
+{materia:"Interpretação de texto", assunto:"Interpretação 7º ano", pergunta:"\nO sentido de uma palavra no texto depende do:", opcoes:["Tamanho da palavra","Contexto","Autor","Título"], correta:1, explicacao:"O contexto ajuda a entender o significado das palavras."},
+
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nTexto: O desmatamento da Amazônia tem preocupado cientistas, pois afeta o clima e a biodiversidade. Qual é a principal preocupação dos cientistas?", opcoes:["O desmatamento da Amazônia","O turismo na Amazônia","A pesca nos rios","A construção de cidades"], correta:0, explicacao:"O texto afirma que os cientistas estão preocupados com o desmatamento da Amazônia."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nTexto: A tecnologia facilita a comunicação entre pessoas de diferentes países, tornando o mundo mais conectado. O que a tecnologia facilita?", opcoes:["A produção agrícola","A comunicação entre pessoas","A poluição","O trânsito"], correta:1, explicacao:"O texto diz que a tecnologia facilita a comunicação entre pessoas de diferentes países."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nTexto: Muitos jovens preferem estudar à noite porque se sentem mais concentrados. Por que eles estudam à noite?", opcoes:["Porque é obrigatório","Porque é mais fácil","Porque se sentem mais concentrados","Porque querem dormir"], correta:2, explicacao:"O texto informa que eles se sentem mais concentrados à noite."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nTexto: A leitura diária melhora o vocabulário e a capacidade de interpretação. Qual é o benefício da leitura diária?", opcoes:["Cansaço","Sono","Falta de atenção","Melhora do vocabulário"], correta:3, explicacao:"O texto afirma que a leitura melhora o vocabulário e a interpretação."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nTexto: O uso excessivo do celular pode prejudicar o sono e a concentração dos estudantes. O que pode prejudicar o sono?", opcoes:["Uso excessivo do celular","Leitura de livros","Estudo diário","Prática de esportes"], correta:0, explicacao:"O texto aponta o uso excessivo do celular como causa do problema."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nInferir informações em um texto significa:", opcoes:["Copiar palavras","Deduzir informações implícitas","Ignorar o texto","Apagar frases"], correta:1, explicacao:"Inferir é deduzir informações que não estão explícitas no texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nO tema de um texto é:", opcoes:["O autor","A pontuação","O assunto principal","O título"], correta:2, explicacao:"O tema é o assunto principal tratado no texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nUm texto coerente é aquele que:", opcoes:["Não tem sentido","É confuso","Tem muitas palavras","Apresenta ideias organizadas"], correta:3, explicacao:"Coerência é a organização lógica das ideias."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nO contexto ajuda a:", opcoes:["Entender o significado das palavras","Ignorar o texto","Apagar frases","Criar erros"], correta:0, explicacao:"O contexto ajuda a compreender o significado das palavras."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nA finalidade de um texto é:", opcoes:["O tamanho do texto","O objetivo da mensagem","A cor da letra","O número de palavras"], correta:1, explicacao:"A finalidade mostra o objetivo da mensagem do texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nNo texto, o autor afirma que a educação é fundamental para o futuro. Qual é a ideia principal desta afirmação?", opcoes:["A educação não é importante","A educação é essencial para o desenvolvimento","A educação é opcional","O futuro não depende da educação"], correta:1, explicacao:"A ideia principal é que a educação tem papel essencial no desenvolvimento do futuro."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nO personagem principal do texto se sentiu triste porque:", opcoes:["Recebeu boas notícias","Perdeu um objeto importante","Estava com fome","Ganhou um presente"], correta:1, explicacao:"O texto descreve que ele se sentiu triste devido à perda do objeto importante."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nQual é o objetivo do autor ao escrever o texto?", opcoes:["Entreter o leitor","Criticar um problema social","Informar sobre um evento histórico","Narrar uma história fictícia"], correta:1, explicacao:"O texto apresenta uma crítica a um problema social, mostrando a intenção do autor."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nNo trecho 'Ele correu para salvar o cachorro', o verbo 'correu' indica:", opcoes:["Uma ação futura","Uma hipótese","Uma ação realizada no passado","Uma ação que ainda vai acontecer"], correta:2, explicacao:"O verbo 'correu' está no pretérito perfeito, indicando ação já realizada no passado."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nSegundo o texto, qual é a importância da amizade?", opcoes:["Proporcionar apoio e confiança","Não ter impacto na vida das pessoas","Gerar conflitos","Substituir a família"], correta:0, explicacao:"O texto destaca que a amizade proporciona apoio e confiança."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nO autor utiliza exemplos no texto para:", opcoes:["Confundir o leitor","Comprovar suas ideias","Evitar que o texto seja entendido","Mostrar situações irreais"], correta:1, explicacao:"Os exemplos são usados para comprovar e reforçar as ideias do autor."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nO título do texto sugere:", opcoes:["Um resumo detalhado do texto","Um comentário crítico","O tema central abordado","Informações irrelevantes"], correta:2, explicacao:"O título normalmente indica o tema central do texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nQuando o texto afirma que 'as crianças aprenderam rapidamente', quer dizer que:", opcoes:["As crianças não aprenderam nada","As crianças aprenderam de forma lenta","As crianças tiveram dificuldade","As crianças absorveram o conteúdo com facilidade"], correta:3, explicacao:"Aprender rapidamente significa absorver o conteúdo com facilidade."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nNo trecho 'O vento soprava forte', o termo 'vento' é:", opcoes:["Verbo","Sujeito","Adjetivo","Predicado"], correta:1, explicacao:"'Vento' é o sujeito da oração, pois pratica a ação de soprar."},
+{materia:"Interpretação de texto", assunto:"Interpretação 8º Ano", pergunta:"\nO uso de perguntas retóricas no texto serve para:", opcoes:["Enganar o leitor","Chamar atenção para uma ideia","Aumentar a extensão do texto","Indicar datas importantes"], correta:1, explicacao:"Perguntas retóricas servem para chamar atenção e reforçar uma ideia."},
+
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\n\nTexto: A preservação ambiental é essencial para garantir qualidade de vida às futuras gerações. Qual é o objetivo do texto?", opcoes:["Criticar o meio ambiente","Defender a preservação ambiental","Falar sobre tecnologia","Falar sobre economia"], correta:1, explicacao:"O texto defende a preservação ambiental para o futuro."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nTexto: Muitos jovens enfrentam dificuldades para entrar no mercado de trabalho por falta de experiência. O que o texto destaca?", opcoes:["A facilidade do trabalho","A falta de estudo","A dificuldade de entrar no mercado","O aumento dos salários"], correta:2, explicacao:"O texto destaca a dificuldade causada pela falta de experiência."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nTexto: A leitura crítica permite ao leitor questionar informações e formar sua própria opinião. Qual é a importância da leitura crítica?", opcoes:["Decorar textos","Ignorar opiniões","Copiar textos","Formar opinião própria"], correta:3, explicacao:"A leitura crítica ajuda o leitor a formar sua própria opinião."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nTexto: A educação é uma das principais ferramentas para o desenvolvimento de um país. O que o texto afirma?", opcoes:["A educação é essencial para o desenvolvimento","A educação não é importante","A economia é mais importante","A tecnologia é inútil"], correta:0, explicacao:"O texto afirma que a educação é fundamental para o desenvolvimento."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nInferir em um texto significa:", opcoes:["Copiar o texto","Entender informações implícitas","Apagar frases","Ignorar o texto"], correta:1, explicacao:"Inferir é compreender algo que não está diretamente escrito."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nA tese de um texto argumentativo é:", opcoes:["O título","O autor","A ideia defendida","O tamanho do texto"], correta:2, explicacao:"A tese é a ideia principal defendida no texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nUm texto com linguagem formal é usado geralmente em:", opcoes:["Conversas informais","Redes sociais","Gírias","Textos acadêmicos"], correta:3, explicacao:"A linguagem formal é comum em textos acadêmicos e oficiais."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nO contexto ajuda o leitor a:", opcoes:["Compreender melhor o texto","Ignorar palavras","Apagar frases","Confundir ideias"], correta:0, explicacao:"O contexto permite entender melhor o significado do texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nA finalidade de um texto argumentativo é:", opcoes:["Narrar uma história","Convencer o leitor","Descrever lugares","Listar objetos"], correta:1, explicacao:"O texto argumentativo busca convencer o leitor sobre uma ideia."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nNo texto, o autor descreve a importância da leitura diária. Qual é a ideia central dessa afirmação?", opcoes:["A leitura não é relevante","A leitura contribui para o conhecimento e o desenvolvimento pessoal","A leitura é apenas para entretenimento","A leitura deve ser evitada"], correta:1, explicacao:"A ideia central é que a leitura contribui para o conhecimento e desenvolvimento pessoal."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nO personagem principal demonstrou coragem porque:", opcoes:["Fugiu da situação","Enfrentou o desafio mesmo com medo","Esperou que outra pessoa resolvesse","Não se importou com os problemas"], correta:1, explicacao:"Coragem é enfrentar o desafio mesmo com medo."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nQual é a intenção do autor ao usar metáforas no texto?", opcoes:["Confundir o leitor","Simplificar a leitura","Criar imagens que ajudam a compreender melhor a mensagem","Dar instruções detalhadas"], correta:2, explicacao:"Metáforas criam imagens que ajudam a compreender a mensagem."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nSegundo o texto, a preservação do meio ambiente é importante porque:", opcoes:["Protege espécies e recursos naturais","Não tem impacto na vida das pessoas","Gera poluição e problemas","É apenas uma formalidade"], correta:0, explicacao:"A preservação protege espécies e recursos naturais e garante qualidade de vida."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nO uso de perguntas retóricas no texto serve para:", opcoes:["Confundir o leitor","Dar respostas diretas","Chamar atenção para um ponto importante","Adicionar informações irrelevantes"], correta:2, explicacao:"Perguntas retóricas reforçam ideias e chamam atenção do leitor."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nQual é a função do título do texto?", opcoes:["Fornecer um resumo detalhado","Indicar o tema central","Adicionar detalhes irrelevantes","Distrair o leitor"], correta:1, explicacao:"O título indica o tema central do texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nNo trecho 'Ela correu até o topo da montanha', o verbo 'correu' indica:", opcoes:["Uma ação hipotética","Uma ação contínua","Uma ação futura","Uma ação realizada no passado"], correta:3, explicacao:"O verbo 'correu' indica uma ação já realizada, portanto está no passado."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nO autor utiliza dados e estatísticas para:", opcoes:["Enganar o leitor","Apoiar e comprovar suas ideias","Distrair a atenção do leitor","Substituir exemplos"], correta:1, explicacao:"O uso de dados e estatísticas reforça os argumentos e dá credibilidade ao texto."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nNo trecho 'O vento soprava com força', o termo 'vento' exerce a função de:", opcoes:["Sujeito","Verbo","Adjetivo","Predicado"], correta:0, explicacao:"O termo 'vento' é o sujeito da oração, pois realiza a ação do verbo 'soprava'."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nQuando o texto diz que 'as crianças absorveram rapidamente o conteúdo', quer dizer que:", opcoes:["Não aprenderam nada","Aprenderam com facilidade","Tiveram dificuldade","Aprenderam lentamente"], correta:1, explicacao:"A expressão indica que as crianças aprenderam com rapidez, absorvendo o conteúdo com facilidade."},
+{materia:"Interpretação de texto", assunto:"Interpretação 9º ano", pergunta:"\nTexto: O avanço da tecnologia trouxe muitos benefícios, mas também aumentou a dependência das pessoas em relação aos celulares e à internet. Qual é a ideia principal do texto?", opcoes:["O avanço da tecnologia e suas consequências","A dependência das pessoas da tecnologia","A invenção do celular","O uso da internet"], correta:0, explicacao:"A ideia principal é o avanço da tecnologia e suas consequências (benefícios e dependência)."},
+
+{materia:"Português 9º Ano", assunto:"Tipos de discurso (direto e indireto)", pergunta:"\nO discurso direto é:", opcoes:["Fala do personagem com palavras do narrador","Fala do personagem exatamente como foi dita","Resumo da fala","Descrição da cena"], correta:1, explicacao:"No discurso direto, a fala do personagem aparece exatamente como foi dita."},
+{materia:"Português 9º Ano", assunto:"Tipos de discurso (direto e indireto)", pergunta:"\nO discurso indireto ocorre quando:", opcoes:["O narrador reproduz a fala com suas palavras","O personagem fala diretamente","Há diálogo com travessão","Não há narrador"], correta:0, explicacao:"No discurso indireto, o narrador reconta a fala do personagem."},
+{materia:"Português 9º Ano", assunto:"Tipos de discurso (direto e indireto)", pergunta:"\nNo discurso direto geralmente aparecem:", opcoes:["Somente verbos","Travessão ou aspas","Somente adjetivos","Somente advérbios"], correta:1, explicacao:"O discurso direto costuma usar travessão ou aspas."},
+{materia:"Português 9º Ano", assunto:"Tipos de discurso (direto e indireto)", pergunta:"\nNa frase João disse: 'Vou estudar', temos:", opcoes:["Discurso indireto","Discurso direto","Narrativa","Descrição"], correta:1, explicacao:"A fala aparece diretamente entre aspas."},
+{materia:"Português 9º Ano", assunto:"Tipos de discurso (direto e indireto)", pergunta:"\nNa frase João disse que iria estudar, temos:", opcoes:["Discurso direto","Discurso indireto","Discurso livre","Discurso narrativo"], correta:1, explicacao:"O narrador reproduz a fala com suas palavras."},
+{materia:"Português 9º Ano", assunto:"Tipos de discurso (direto e indireto)", pergunta:"\nO discurso indireto geralmente usa:", opcoes:["Travessão","Aspas","Conjunção 'que'","Ponto e vírgula"], correta:2, explicacao:"O discurso indireto normalmente usa a conjunção 'que'."},
+{materia:"Português 9º Ano", assunto:"Tipos de discurso (direto e indireto)", pergunta:"\nQual frase apresenta discurso direto?", opcoes:["Ele disse que viria","Maria falou que estudou","Pedro afirmou que sairia","Pedro disse: 'Vou sair'"], correta:3, explicacao:"A fala aparece diretamente entre aspas."},
+{materia:"Português 9º Ano", assunto:"Tipos de discurso (direto e indireto)", pergunta:"\nQual frase apresenta discurso indireto?", opcoes:["Ele disse: 'Vou sair'","Maria falou: 'Vou estudar'","Pedro disse que sairia","João gritou: 'Pare!'"], correta:2, explicacao:"A fala é reproduzida pelo narrador."},
+{materia:"Português 9º Ano", assunto:"Tipos de discurso (direto e indireto)", pergunta:"\nNo discurso direto a fala é:", opcoes:["Modificada","Resumida","Narrada","Literal"], correta:3, explicacao:"A fala aparece de forma literal."},
+{materia:"Português 9º Ano", assunto:"Tipos de discurso (direto e indireto)", pergunta:"\nO principal objetivo do discurso indireto é:", opcoes:["Mostrar fala literal","Narrar a fala do personagem","Usar travessão","Criar diálogo"], correta:1, explicacao:"O discurso indireto narra a fala do personagem com palavras do narrador."},
+
+{"materia":"Português 9º Ano","assunto":"Período Composto II","pergunta":"Na frase 'Ele estudou e passou no teste', o período é:","opcoes":["Período simples","Período composto por coordenação","Período composto por subordinação","Frase nominal"],"correta":1,"explicacao":"O período apresenta duas orações independentes ligadas pela conjunção 'e', portanto é composto por coordenação."},
+{"materia":"Português 9º Ano","assunto":"Período Composto II","pergunta":"Na frase 'Ela ficou em casa, embora estivesse doente', o período é:","opcoes":["Período simples","Período composto por coordenação","Período composto por subordinação","Período composto por subordinação concessiva"],"correta":3,"explicacao":"A oração 'embora estivesse doente' é subordinada concessiva e depende da oração principal, portanto é período composto por subordinação."},
+{"materia":"Português 9º Ano","assunto":"Período Composto II","pergunta":"Na frase 'O aluno que estudou passou', a oração 'que estudou' é:","opcoes":["Subordinada adjetiva","Coordenada","Subordinada adverbial","Predicado"],"correta":0,"explicacao":"A oração 'que estudou' caracteriza o substantivo 'aluno', sendo uma oração subordinada adjetiva restritiva."},
+{"materia":"Português 9º Ano","assunto":"Período Composto II","pergunta":"Na frase 'Farei a tarefa quando chegar em casa', a oração 'quando chegar em casa' é:","opcoes":["Subordinada adjetiva","Subordinada adverbial temporal","Coordenada","Período simples"],"correta":1,"explicacao":"A oração 'quando chegar em casa' indica tempo e depende da oração principal, sendo subordinada adverbial temporal."},
+{"materia":"Português 9º Ano","assunto":"Período Composto II","pergunta":"Na frase 'Embora estivesse cansado, continuou estudando', a oração 'Embora estivesse cansado' é:","opcoes":["Coordenada","Subordinada adverbial concessiva","Subordinada adjetiva","Período simples"],"correta":1,"explicacao":"A oração introduzida por 'Embora' indica concessão, sendo uma subordinada adverbial concessiva."},
+{"materia":"Português 9º Ano","assunto":"Período Composto II","pergunta":"Na frase 'Eu estudei, mas não passei', a palavra 'mas' é:","opcoes":["Subordinada","Período simples","Subordinada adverbial","Conjunção coordenativa"],"correta":3,"explicacao":"A palavra 'mas' liga duas orações independentes com ideia de oposição, sendo uma conjunção coordenativa adversativa."},
+{"materia":"Português 9º Ano","assunto":"Período Composto II","pergunta":"Na frase 'Se você estudar, passará no teste', a oração 'Se você estudar' é:","opcoes":["Subordinada adjetiva","Subordinada adverbial condicional","Subordinada adverbial","Coordenada"],"correta":1,"explicacao":"A oração 'Se você estudar' indica condição, sendo uma subordinada adverbial condicional."},
+{"materia":"Português 9º Ano","assunto":"Período Composto II","pergunta":"Na frase 'Ele trabalhou e ainda estudou', a palavra 'e' é:","opcoes":["Subordinada","Preposição","Advérbio","Conjunção coordenativa"],"correta":3,"explicacao":"A conjunção 'e' liga duas orações independentes, sendo uma conjunção coordenativa aditiva."},
+{"materia":"Português 9º Ano","assunto":"Período Composto II","pergunta":"Na frase 'O menino que chegou cedo fez a lição', a oração 'que chegou cedo' é:","opcoes":["Subordinada adjetiva","Subordinada adverbial","Coordenada","Período simples"],"correta":0,"explicacao":"A oração 'que chegou cedo' caracteriza o substantivo 'menino', sendo uma subordinada adjetiva restritiva."},
+{"materia":"Português 9º Ano","assunto":"Período Composto II","pergunta":"Na frase 'Quando terminar a prova, sairei da sala', a oração 'Quando terminar a prova' é:","opcoes":["Coordenada","Subordinada adverbial temporal","Subordinada adjetiva","Período simples"],"correta":1,"explicacao":"A oração 'Quando terminar a prova' indica tempo e depende da oração principal, sendo subordinada adverbial temporal."},
+
+{"materia":"Português 8º Ano","assunto":"Período Simples II","pergunta":"Na frase 'O menino brinca no quintal', qual é o tipo de período?","opcoes":["Período composto","Período simples","Período composto por subordinação","Período composto por coordenação"],"correta":1,"explicacao":"A frase possui apenas uma oração, portanto é um período simples."},
+{"materia":"Português 8º Ano","assunto":"Período Simples II","pergunta":"Na frase 'Ela estuda e trabalha todos os dias', o período é:","opcoes":["Período simples","Período composto","Período com oração subordinada","Período composto por coordenação"],"correta":3,"explicacao":"O período apresenta duas orações ligadas por 'e', portanto é composto por coordenação."},
+{"materia":"Português 8º Ano","assunto":"Período Simples II","pergunta":"Na frase 'A criança dormiu cedo', o período é:","opcoes":["Período simples","Período composto","Período composto por subordinação","Período composto por coordenação"],"correta":0,"explicacao":"A frase apresenta apenas uma oração, sendo um período simples."},
+{"materia":"Português 8º Ano","assunto":"Período Simples II","pergunta":"Na frase 'O cachorro latiu à noite', o período é:","opcoes":["Período simples","Período composto","Período composto por subordinação","Período composto por coordenação"],"correta":0,"explicacao":"Há apenas uma oração com sujeito e predicado, então é período simples."},
+{"materia":"Português 8º Ano","assunto":"Período Simples II","pergunta":"Na frase 'O livro é interessante', o predicado é:","opcoes":["O livro","é interessante","interessante","livro"],"correta":1,"explicacao":"O predicado é 'é interessante', pois contém o verbo e a informação sobre o sujeito."},
+{"materia":"Português 8º Ano","assunto":"Período Simples II","pergunta":"Na frase 'O sol brilha forte', o período é:","opcoes":["Período composto","Período simples","Período composto por subordinação","Período composto por coordenação"],"correta":1,"explicacao":"Existe apenas uma oração, logo é um período simples."},
+{"materia":"Português 8º Ano","assunto":"Período Simples II","pergunta":"Na frase 'O aluno parece cansado', o termo 'cansado' é:","opcoes":["Substantivo","Advérbio","Predicativo do sujeito","Verbo"],"correta":2,"explicacao":"O termo 'cansado' caracteriza o sujeito 'o aluno', sendo predicativo do sujeito."},
+{"materia":"Português 8º Ano","assunto":"Período Simples II","pergunta":"Na frase 'Ela chegou atrasada', o período é:","opcoes":["Período simples","Período composto","Período composto por subordinação","Período composto por coordenação"],"correta":0,"explicacao":"A frase apresenta apenas uma oração, portanto é um período simples."},
+{"materia":"Português 8º Ano","assunto":"Período Simples II","pergunta":"Na frase 'O menino correu rápido', o verbo é:","opcoes":["Substantivo","Verbo","Adjetivo","Advérbio"],"correta":1,"explicacao":"O verbo 'correu' indica a ação praticada pelo sujeito, sendo o núcleo do predicado."},
+{"materia":"Português 8º Ano","assunto":"Período Simples II","pergunta":"Na frase 'A menina estava feliz', o termo 'feliz' é:","opcoes":["Substantivo","Predicativo do sujeito","Adjetivo","Verbo"],"correta":1,"explicacao":"O termo 'feliz' caracteriza o sujeito 'a menina', sendo predicativo do sujeito."},
+
+{"materia":"Português 8º Ano","assunto":"Predicativo II","pergunta":"Na frase 'O cachorro ficou assustado', assustado é:","opcoes":["Objeto","Predicativo do sujeito","Verbo","Artigo"],"correta":1,"explicacao":"Assustado caracteriza o sujeito 'O cachorro', sendo predicativo do sujeito."},
+{"materia":"Português 8º Ano","assunto":"Predicativo II","pergunta":"O predicativo do sujeito sempre se refere a:","opcoes":["Sujeito","Objeto direto","Verbo","Complemento"],"correta":0,"explicacao":"Predicativo do sujeito se refere ao sujeito da frase."},
+{"materia":"Português 8º Ano","assunto":"Predicativo II","pergunta":"Na frase 'Ela parece cansada', cansada é:","opcoes":["Verbo","Adjetivo","Predicativo do sujeito","Substantivo"],"correta":2,"explicacao":"Cansada caracteriza o sujeito 'Ela', sendo predicativo do sujeito."},
+{"materia":"Português 8º Ano","assunto":"Predicativo II","pergunta":"Predicativo do objeto caracteriza:","opcoes":["O verbo","O sujeito","O objeto direto ou indireto","O predicado"],"correta":2,"explicacao":"Predicativo do objeto caracteriza o objeto da ação."},
+{"materia":"Português 8º Ano","assunto":"Predicativo II","pergunta":"Na frase 'Considero João estudioso', estudioso é:","opcoes":["Predicativo do sujeito","Verbo","Predicativo do objeto","Artigo"],"correta":2,"explicacao":"Estudioso caracteriza o objeto 'João', sendo predicativo do objeto."},
+{"materia":"Português 8º Ano","assunto":"Predicativo II","pergunta":"O predicativo pode aparecer com verbos chamados de:","opcoes":["Ação","Ligação","Transitivos","Intransitivos"],"correta":1,"explicacao":"O predicativo aparece principalmente com verbos de ligação, pois indicam estado ou característica do sujeito."},
+{"materia":"Português 8º Ano","assunto":"Predicativo II","pergunta":"Na frase 'O time saiu vitorioso', vitorioso é:","opcoes":["Verbo","Objeto","Predicativo do sujeito","Adjetivo"],"correta":2,"explicacao":"Vitorioso caracteriza o sujeito 'O time'; o verbo 'saiu' indica estado, funcionando como verbo de ligação."},
+{"materia":"Português 8º Ano","assunto":"Predicativo II","pergunta":"Predicativo do sujeito indica geralmente:","opcoes":["Objeto da frase","Estado ou característica do sujeito","Ação do verbo","Complemento do predicado"],"correta":1,"explicacao":"Predicativo do sujeito indica estado ou característica do sujeito."},
+{"materia":"Português 8º Ano","assunto":"Predicativo II","pergunta":"Na frase 'Juliana ficou nervosa', nervosa é:","opcoes":["Substantivo","Verbo","Predicativo do sujeito","Objeto"],"correta":2,"explicacao":"Nervosa caracteriza o sujeito 'Juliana', sendo predicativo do sujeito."},
+{"materia":"Português 8º Ano","assunto":"Predicativo II","pergunta":"Predicativo do objeto diferencia-se do predicativo do sujeito porque:","opcoes":["Se refere ao verbo","Se refere ao sujeito","Se refere ao objeto da ação","Se refere à frase inteira"],"correta":2,"explicacao":"Predicativo do objeto se refere ao objeto da frase, não ao sujeito."},
+
+
+
+
+
+
+
+
+
+
+
+
+
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'O cachorro latiu durante a noite.'Qual é o sujeito?","opcoes":["latiu","O cachorro","durante a noite","Não há sujeito"],"correta":1,"explicacao":"Sujeito é quem pratica a ação do verbo; 'O cachorro' é o sujeito simples da oração."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Maria e João viajaram para o interior.'Qual é o sujeito?","opcoes":["Maria","João","Maria e João","Não há sujeito"],"correta":2,"explicacao":"Sujeito composto é formado por dois ou mais núcleos; 'Maria e João' formam o sujeito composto."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Choveu durante toda a manhã.'Qual é o sujeito?","opcoes":["Choveu","durante toda a manhã","Manhã","Não há sujeito"],"correta":3,"explicacao":"O verbo 'chover' é impessoal; portanto, não há sujeito na oração."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Fui ao mercado ontem.'Qual é o sujeito?","opcoes":["Fui","Mercado","Eu","Não há sujeito"],"correta":2,"explicacao":"Sujeito oculto (eu), identificado pela desinência verbal 'fui'."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Precisa-se de voluntários para o evento.'Qual é o sujeito?","opcoes":["Voluntários","Evento","Não é possível identificar","Precisa-se"],"correta":2,"explicacao":"O verbo com 'se' indica sujeito indeterminado; não é possível identificar quem realiza a ação."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Os alunos estudam para a prova.'Qual é o sujeito?","opcoes":["Estudam","Os alunos","Prova","Não há sujeito"],"correta":1,"explicacao":"Sujeito simples; 'Os alunos' praticam a ação de estudar."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Corre rapidamente pelo corredor.'Qual é o sujeito?","opcoes":["Ele","Corredor","Não há sujeito","Corre"],"correta":0,"explicacao":"Sujeito oculto (ele/ela/você), identificado pela forma verbal 'corre'."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'As flores do jardim estão murchas.'Qual é o sujeito?","opcoes":["Estão","Murchas","As flores do jardim","Jardim"],"correta":2,"explicacao":"Sujeito simples com núcleo 'flores'; indica quem está no estado descrito pelo verbo."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Pedro, Lucas e Ana foram ao cinema ontem.'Qual é o sujeito?","opcoes":["Pedro","Lucas","Cinema","Pedro, Lucas e Ana"],"correta":3,"explicacao":"Sujeito composto formado por três núcleos: Pedro, Lucas e Ana."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Amanheceu frio e chuvoso.'Qual é o sujeito?","opcoes":["Amanheceu","Frio e chuvoso","Dia","Não há sujeito"],"correta":3,"explicacao":"O verbo 'amanhecer' é impessoal nesse contexto; não há sujeito."},
+
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais I","pergunta":"\nNa frase 'O cachorro brincava alegremente no quintal.'Qual palavra é substantivo?","opcoes":["brincava","alegremente","cachorro","no"],"correta":2,"explicacao":"Substantivo é a palavra que nomeia seres, coisas, lugares ou ideias; aqui, 'cachorro' é o substantivo."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais I","pergunta":"\nNa frase 'O cachorro brincava alegremente no quintal.'Qual palavra é verbo?","opcoes":["alegremente","brincava","cachorro","no"],"correta":1,"explicacao":"Verbo indica ação ou estado; 'brincava' mostra a ação do sujeito."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais I","pergunta":"\nNa frase 'O cachorro brincava alegremente no quintal.'Qual palavra é advérbio?","opcoes":["cachorro","no","alegremente","brincava"],"correta":2,"explicacao":"Advérbio modifica o verbo; 'alegremente' indica modo da ação de brincar."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais I","pergunta":"\nNa frase 'Ela estava cansada depois da corrida.'Qual palavra é pronome?","opcoes":["cansada","Ela","corrida","depois"],"correta":1,"explicacao":"Pronome substitui ou retoma substantivo; 'Ela' substitui a pessoa de quem se fala."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais I","pergunta":"\nNa frase 'O sol brilhava intensamente na manhã.'Qual palavra é artigo?","opcoes":["sol","intensamente","O","brilhava"],"correta":2,"explicacao":"Artigo define ou determina o substantivo; 'O' acompanha 'sol'."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais I","pergunta":"\nNa frase 'Ele correu rapidamente porque queria vencer a corrida.'Qual palavra é conjunção?","opcoes":["rapidamente","corrida","porque","ele"],"correta":2,"explicacao":"Conjunção conecta orações e indica relação; 'porque' mostra causa."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais I","pergunta":"\nNa frase 'Eles caminharam pelo parque à tarde.'Qual palavra é preposição?","opcoes":["Eles","pelo","tarde","caminharam"],"correta":1,"explicacao":"Preposição liga palavras, mostrando relação; 'pelo' é a contração de 'por + o'."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais I","pergunta":"\nNa frase 'O menino estava feliz com o presente.'Qual expressão indica predicativo do sujeito?","opcoes":["com o presente","O menino","feliz","O"],"correta":2,"explicacao":"Predicativo do sujeito atribui característica ao sujeito; 'feliz' descreve o estado do menino."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais I","pergunta":"\nNa frase 'Nós estudamos muito para a prova de matemática.'Qual palavra é advérbio?","opcoes":["prova","muito","matemática","estudamos"],"correta":1,"explicacao":"Advérbio modifica o verbo; 'muito' intensifica o verbo 'estudamos'."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais I","pergunta":"\nNa frase 'Maria e João foram ao cinema juntos.'Qual palavra é conjunção?","opcoes":["Maria","João","juntos","e"],"correta":3,"explicacao":"A conjunção 'e' conecta dois sujeitos, ligando 'Maria' e 'João'."},
+
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais II","pergunta":"\nNa frase 'O vento forte derrubou algumas árvores no jardim.'Qual palavra é substantivo?","opcoes":["forte","vento","derrubou","no"],"correta":1,"explicacao":"Substantivo é a palavra que nomeia seres, coisas, lugares ou ideias; 'vento' é substantivo."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais II","pergunta":"\nNa frase 'O vento forte derrubou algumas árvores no jardim.'Qual palavra é adjetivo?","opcoes":["derrubou","vento","forte","no"],"correta":2,"explicacao":"Adjetivo caracteriza o substantivo; 'forte' descreve o vento."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais II","pergunta":"\nNa frase 'Eles estudam atentamente para os exames.'Qual palavra é advérbio?","opcoes":["Eles","atentamente","exames","estudam"],"correta":1,"explicacao":"Advérbio indica modo; 'atentamente' mostra como estudam."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais II","pergunta":"\nNa frase 'Eu gosto de ler livros interessantes.'Qual palavra é pronome?","opcoes":["gosto","livros","Eu","ler"],"correta":2,"explicacao":"Pronome substitui o substantivo; 'Eu' indica a pessoa que fala."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais II","pergunta":"\nNa frase 'A menina trouxe um presente para a amiga.'Qual palavra é artigo?","opcoes":["menina","trouxe","presente","A"],"correta":3,"explicacao":"Artigo determina o substantivo; 'A' acompanha 'menina'."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais II","pergunta":"\nNa frase 'Ele não foi ao cinema, mas ficou em casa.'Qual palavra é conjunção?","opcoes":["cinema","não","mas","foi"],"correta":2,"explicacao":"Conjunção liga orações; 'mas' indica oposição."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais II","pergunta":"\nNa frase 'Caminhamos até a praia no fim de semana.'Qual palavra é preposição?","opcoes":["praia","até","fim","Caminhamos"],"correta":1,"explicacao":"Preposição liga palavras; 'até' indica relação de destino."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais II","pergunta":"\nNa frase 'O céu estava azul e limpo pela manhã.'Qual expressão indica predicativo do sujeito?","opcoes":["pela manhã","O céu","azul e limpo","O"],"correta":2,"explicacao":"Predicativo do sujeito caracteriza o sujeito; 'azul e limpo' descreve o céu."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais II","pergunta":"\nNa frase 'Ontem, assistimos a um filme muito interessante.'Qual palavra é advérbio?","opcoes":["filme","assistimos","Ontem","interessante"],"correta":2,"explicacao":"Advérbio indica tempo; 'Ontem' mostra quando a ação ocorreu."},
+{"materia":"Português 7º Ano","assunto":"Identificação de classes gramaticais II","pergunta":"\nNa frase 'João e Pedro estudaram juntos para a prova.'Qual palavra é conjunção?","opcoes":["Pedro","e","João","juntos"],"correta":1,"explicacao":"Conjunção liga palavras; 'e' conecta João e Pedro."},
+
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'O cachorro latiu durante a noite.'Qual é o sujeito?","opcoes":["latiu","O cachorro","durante a noite","Não há sujeito"],"correta":1,"explicacao":"Sujeito é quem pratica a ação do verbo; 'O cachorro' é o sujeito simples da oração."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Maria e João viajaram para o interior.'Qual é o sujeito?","opcoes":["Maria","João","Maria e João","Não há sujeito"],"correta":2,"explicacao":"Sujeito composto é formado por dois ou mais núcleos; 'Maria e João' formam o sujeito composto."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Choveu durante toda a manhã.'Qual é o sujeito?","opcoes":["Choveu","durante toda a manhã","Manhã","Não há sujeito"],"correta":3,"explicacao":"O verbo 'chover' é impessoal; portanto, não há sujeito na oração."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Fui ao mercado ontem.'Qual é o sujeito?","opcoes":["Fui","Mercado","Eu","Não há sujeito"],"correta":2,"explicacao":"Sujeito oculto (eu), identificado pela desinência verbal 'fui'."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Precisa-se de voluntários para o evento.'Qual é o sujeito?","opcoes":["Voluntários","Evento","Não é possível identificar","Precisa-se"],"correta":2,"explicacao":"O verbo com 'se' indica sujeito indeterminado; não é possível identificar quem realiza a ação."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Os alunos estudam para a prova.'Qual é o sujeito?","opcoes":["Estudam","Os alunos","Prova","Não há sujeito"],"correta":1,"explicacao":"Sujeito simples; 'Os alunos' praticam a ação de estudar."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Corre rapidamente pelo corredor.'Qual é o sujeito?","opcoes":["Ele","Corredor","Não há sujeito","Corre"],"correta":0,"explicacao":"Sujeito oculto (ele/ela/você), identificado pela forma verbal 'corre'."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'As flores do jardim estão murchas.'Qual é o sujeito?","opcoes":["Estão","Murchas","As flores do jardim","Jardim"],"correta":2,"explicacao":"Sujeito simples com núcleo 'flores'; indica quem está no estado descrito pelo verbo."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Pedro, Lucas e Ana foram ao cinema ontem.'Qual é o sujeito?","opcoes":["Pedro","Lucas","Cinema","Pedro, Lucas e Ana"],"correta":3,"explicacao":"Sujeito composto formado por três núcleos: Pedro, Lucas e Ana."},
+{"materia":"Português 8º Ano","assunto":"Sujeito","pergunta":"\nNa frase 'Amanheceu frio e chuvoso.'Qual é o sujeito?","opcoes":["Amanheceu","Frio e chuvoso","Dia","Não há sujeito"],"correta":3,"explicacao":"O verbo 'amanhecer' é impessoal nesse contexto; não há sujeito."},
+
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças)","pergunta":"\nNa frase 'Ela saiu de casa cedo porque queria pegar o ônibus a tempo.'Qual palavra é conjunção?","opcoes":["de","porque","a","tempo"],"correta":1,"explicacao":"A conjunção 'porque' conecta duas orações e indica causa da ação."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças)","pergunta":"\nNa frase 'O livro está sobre a mesa e próximo da janela.'Qual palavra é preposição?","opcoes":["e","próximo","sobre","da"],"correta":2,"explicacao":"A preposição 'sobre' liga o substantivo 'livro' a outro termo, indicando lugar."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças)","pergunta":"\nNa frase 'Ele não estudou, portanto não passou na prova.'Qual palavra é conjunção?","opcoes":["não","passou","prova","portanto"],"correta":3,"explicacao":"A conjunção 'portanto' conecta orações e indica consequência."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças)","pergunta":"\nNa frase 'O gato pulou sobre o sofá.'Qual palavra é preposição?","opcoes":["sobre","pulou","o","gato"],"correta":0,"explicacao":"A preposição 'sobre' liga o verbo 'pulou' ao substantivo 'sofá', indicando lugar."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças)","pergunta":"\nNa frase 'Fui ao mercado e depois passei na farmácia.'Qual palavra é conjunção?","opcoes":["ao","e","na","depois"],"correta":1,"explicacao":"A conjunção 'e' conecta duas orações, mostrando adição de ações."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças)","pergunta":"\nNa frase 'Ele trabalha com dedicação todos os dias.'Qual palavra é preposição?","opcoes":["trabalha","ele","com","todos"],"correta":2,"explicacao":"A preposição 'com' liga o verbo 'trabalha' ao substantivo 'dedicação', indicando modo."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças)","pergunta":"\nNa frase 'Vou ao cinema, mas depois volto para casa.'Qual palavra é conjunção?","opcoes":["ao","para","cinema","mas"],"correta":3,"explicacao":"A conjunção 'mas' conecta duas orações, indicando contraste."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças)","pergunta":"\nNa frase 'O presente foi para a amiga que mora em Lisboa.'Qual palavra é preposição que indica direção?","opcoes":["para","que","em","foi"],"correta":0,"explicacao":"A preposição 'para' indica direção do presente até a amiga."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças)","pergunta":"\nNa frase 'Ele estudou muito, porque queria passar no concurso.'Qual palavra é conjunção?","opcoes":["muito","porque","passar","no"],"correta":1,"explicacao":"A conjunção 'porque' conecta duas orações, indicando causa."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças)","pergunta":"\nNa frase 'Ela viajou com amigos e se divertiu bastante.'Qual palavra é preposição?","opcoes":["e","se","bastante","com"],"correta":3,"explicacao":"A preposição 'com' liga o verbo 'viajou' ao substantivo 'amigos', indicando companhia."},
+
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças) II","pergunta":"\nNa frase 'Eu fui ao mercado com meu irmão', a palavra 'com' é:","opcoes":["Conjunção coordenativa","Conjunção subordinativa","Preposição","Advérbio"],"correta":2,"explicacao":"A palavra 'com' liga o termo 'meu irmão' ao verbo, estabelecendo relação de companhia, portanto é uma preposição."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças) II","pergunta":"\nNa frase 'Ele estudou muito, mas não passou', a palavra 'mas' é:","opcoes":["Preposição","Advérbio","Substantivo","Conjunção"],"correta":3,"explicacao":"A palavra 'mas' liga duas orações com ideia de oposição, sendo uma conjunção coordenativa adversativa."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças) II","pergunta":"\nNa frase 'Saímos de casa cedo', a palavra 'de' é classificada como:","opcoes":["Preposição","Conjunção","Verbo","Pronome"],"correta":0,"explicacao":"A palavra 'de' liga o verbo ao complemento 'casa', indicando origem ou ponto de saída, sendo uma preposição."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças) II","pergunta":"\nQual alternativa apresenta uma conjunção?","opcoes":["com","porque","de","em"],"correta":1,"explicacao":"A palavra 'porque' liga duas orações, sendo uma conjunção; as demais são preposições."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças) II","pergunta":"\nNa frase 'Vou estudar para passar na prova', a palavra 'para' é:","opcoes":["Verbo","Conjunção","Preposição","Substantivo"],"correta":2,"explicacao":"A palavra 'para' estabelece relação de finalidade entre os termos, sendo uma preposição."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças) II","pergunta":"\nNa frase 'Ele saiu porque estava cansado', a palavra 'porque' é:","opcoes":["Preposição","Artigo","Conjunção","Pronome"],"correta":2,"explicacao":"A palavra 'porque' liga duas orações indicando causa, sendo uma conjunção subordinativa causal."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças) II","pergunta":"\nQual alternativa apresenta apenas preposições?","opcoes":["porque, mas, e","quando, se, porém","logo, entretanto, pois","de, com, em"],"correta":3,"explicacao":"As palavras 'de', 'com' e 'em' são preposições; as demais alternativas apresentam conjunções."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças) II","pergunta":"\nNa frase 'Estudei e passei na prova', a palavra 'e' é:","opcoes":["Preposição","Conjunção","Verbo","Artigo"],"correta":1,"explicacao":"A palavra 'e' liga duas orações com ideia de adição, sendo uma conjunção coordenativa aditiva."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças) II","pergunta":"\nQual alternativa mostra corretamente a função da preposição?","opcoes":["Ligar termos dentro da oração","Ligar orações independentes","Indicar ação do sujeito","Substituir o substantivo"],"correta":0,"explicacao":"A preposição liga termos dentro da oração, estabelecendo relações como lugar, tempo, causa ou companhia."},
+{"materia":"Português 7º Ano","assunto":"Conjunção x Preposição (diferenças) II","pergunta":"\nNa frase 'Ela chorou, pois estava triste', a palavra 'pois' é:","opcoes":["Preposição","Substantivo","Conjunção","Adjetivo"],"correta":2,"explicacao":"A palavra 'pois' liga duas orações com ideia de explicação ou causa, sendo uma conjunção coordenativa explicativa."},
+
+{"materia":"Português 7º Ano","assunto":"Conjunção","pergunta":"\nConjunção é a palavra que:","opcoes":["Liga palavras ou orações","Indica ação","Nomeia seres","Caracteriza substantivo"],"correta":0,"explicacao":"Conjunção liga palavras ou orações."},
+{"materia":"Português 7º Ano","assunto":"Conjunção","pergunta":"\nNa frase 'Eu estudei e passei', a palavra e é:","opcoes":["Verbo","Substantivo","Conjunção","Adjetivo"],"correta":2,"explicacao":"E liga duas orações."},
+{"materia":"Português 7º Ano","assunto":"Conjunção","pergunta":"\nQual alternativa apresenta conjunção?","opcoes":["Casa","Bonito","Mas","Mesa"],"correta":2,"explicacao":"Mas é conjunção."},
+{"materia":"Português 7º Ano","assunto":"Conjunção","pergunta":"\nA conjunção 'mas' indica:","opcoes":["Adição","Oposição","Tempo","Lugar"],"correta":1,"explicacao":"Mas indica oposição."},
+{"materia":"Português 7º Ano","assunto":"Conjunção","pergunta":"\nNa frase 'Ele estudou porque queria passar', porque é:","opcoes":["Verbo","Conjunção","Substantivo","Pronome"],"correta":1,"explicacao":"Porque liga as orações indicando causa."},
+{"materia":"Português 7º Ano","assunto":"Conjunção","pergunta":"\nA conjunção 'e' indica:","opcoes":["Oposição","Adição","Causa","Tempo"],"correta":1,"explicacao":"E indica adição."},
+{"materia":"Português 7º Ano","assunto":"Conjunção","pergunta":"\nQual palavra é conjunção?","opcoes":["Com","Mas","Mesa","Bonito"],"correta":1,"explicacao":"Mas é conjunção."},
+{"materia":"Português 7º Ano","assunto":"Conjunção","pergunta":"\nNa frase 'Vou sair ou ficar em casa', ou indica:","opcoes":["Adição","Oposição","Alternativa","Tempo"],"correta":2,"explicacao":"Ou indica alternativa."},
+{"materia":"Português 7º Ano","assunto":"Conjunção","pergunta":"\nConjunções servem para:","opcoes":["Nomear seres","Ligar orações","Indicar ação","Caracterizar substantivo"],"correta":1,"explicacao":"Conjunções ligam orações."},
+{"materia":"Português 7º Ano","assunto":"Conjunção","pergunta":"\nA conjunção 'porque' indica:","opcoes":["Tempo","Lugar","Causa","Adição"],"correta":2,"explicacao":"Porque indica causa."},
+
+{"materia":"Português 7º Ano","assunto":"Advérbio II","pergunta":"\nNa frase 'O aluno respondeu corretamente todas as perguntas da prova.'Qual palavra é advérbio?","opcoes":["respondeu","aluno","corretamente","prova"],"correta":2,"explicacao":"O advérbio 'corretamente' indica o modo como o aluno respondeu."},
+{"materia":"Português 7º Ano","assunto":"Advérbio II","pergunta":"\nNa frase 'Ela chegará amanhã para a reunião.'Qual palavra é advérbio?","opcoes":["chegará","ela","reunião","amanhã"],"correta":3,"explicacao":"O advérbio 'amanhã' indica o tempo em que a ação ocorrerá."},
+{"materia":"Português 7º Ano","assunto":"Advérbio II","pergunta":"\nNa frase 'Ele mora perto da escola.'Qual palavra é advérbio?","opcoes":["mora","perto","ele","escola"],"correta":1,"explicacao":"O advérbio 'perto' indica o lugar em que ele mora."},
+{"materia":"Português 7º Ano","assunto":"Advérbio II","pergunta":"\nNa frase 'Infelizmente, não pudemos ir ao cinema.'Qual palavra é advérbio?","opcoes":["não","pudemos","Infelizmente","ir"],"correta":2,"explicacao":"O advérbio 'Infelizmente' expressa atitude do falante em relação ao fato."},
+{"materia":"Português 7º Ano","assunto":"Advérbio II","pergunta":"\nNa frase 'Ele sempre estuda antes das provas.'Qual palavra é advérbio?","opcoes":["ele","sempre","provas","estuda"],"correta":1,"explicacao":"O advérbio 'sempre' indica frequência da ação."},
+{"materia":"Português 7º Ano","assunto":"Advérbio II","pergunta":"\nNa frase 'A menina correu muito rápido no parque.'Qual palavra é advérbio?","opcoes":["parque","menina","muito","correu"],"correta":2,"explicacao":"O advérbio 'muito' intensifica o advérbio 'rápido'."},
+{"materia":"Português 7º Ano","assunto":"Advérbio II","pergunta":"\nNa frase 'Ele quase terminou o exercício a tempo.'Qual palavra é advérbio?","opcoes":["terminou","exercício","a","quase"],"correta":3,"explicacao":"O advérbio 'quase' indica aproximação ou intensidade da ação."},
+{"materia":"Português 7º Ano","assunto":"Advérbio II","pergunta":"\nNa frase 'Sim, eu concordo com você.'Qual palavra é advérbio?","opcoes":["concordo","Sim","eu","você"],"correta":1,"explicacao":"O advérbio 'Sim' expressa afirmação."},
+{"materia":"Português 7º Ano","assunto":"Advérbio II","pergunta":"\nNa frase 'Ele nunca esquece de entregar o trabalho.'Qual palavra é advérbio?","opcoes":["trabalho","esquece","nunca","ele"],"correta":2,"explicacao":"O advérbio 'nunca' indica negação e frequência da ação."},
+{"materia":"Português 7º Ano","assunto":"Advérbio II","pergunta":"\nNa frase 'Ontem, fomos ao parque com nossos amigos.'Qual palavra é advérbio?","opcoes":["fomos","parque","amigos","Ontem"],"correta":3,"explicacao":"O advérbio 'Ontem' indica o tempo da ação."}
+
+
+]
+
+
+// ASSUNTOS CONCLUÍDOS
+// Chaves das matérias em minúsculo para padronização
+// true = concluído, false = não concluído
+
+const assuntosConcluidos={
+
+"Português 6º Ano": {
+  "Gêneros textuais": true,
+  "Substantivo": true,
+"Adjetivo": true,
+"Artigo": true,
+"Pronome": true,
+"Verbo": true,
+"Ortografia básica": true,
+"Pontuação básica": true,
+"Sinônimos e antônimos": true,
+"Acentuação básica": true,
+"Produção de texto simples": true
+},
+
+"Português 7º Ano": {
+  "Classes gramaticais": true,
+"Classes Gramaticais II": false,
+"Substantivo e adjetivo (flexão e grau)": true,
+"Verbos (tempos e modos)": true,
+"Verbos II": false,
+"Advérbio I": true,
+"Advérbio II": false,
+"Preposição": true,
+"Preposição II": false,
+"Conjunção": true,
+"Conjunção II": false,
+"Conjunção x Preposição (diferenças)": true,
+"Conjunção x Preposição (diferenças) II": false,
+"Frase, oração e período": true,
+"Pontuação": false,
+"Ortografia e acentuação": false,
+"Identificação de classes gramaticais I": true,
+"Identificação de classes gramaticais II": true
+},
+
+"Português 8º Ano": {
+  "Sujeito": true,
+"Sujeito (tipos)": true,
+"Predicativo I": true,
+"Predicativo II": true,
+"Objeto direto e indireto": false,
+"Aposto": false,
+"Concordância verbal": false,
+"Concordância nominal": false,
+"Regência verbal e nominal": false,
+"Crase": false,
+"Período simples": true,
+"Período Simples II": false,
+"Período composto": false,
+"Interpretação e análise de texto": false
+},
+
+"Português 9º Ano": {
+"Período Composto II": false, 
+"Período composto por coordenação": false,
+"Período composto por subordinação": false,
+"Orações subordinadas": false,
+"Conectivos": false,
+"Pontuação avançada": false,
+"Concordância avançada": false,
+"Regência verbal e nominal": false, 
+"Crase aprofundada": false,
+"Figuras de linguagem": true,
+"Tipos de discurso (direto e indireto)": false,
+"Funções da linguagem": false,
+"Produção textual (redação)": false,
+"Coesão e coerência": false
+},
+
+"Interpretação de texto": {
+"Interpretação 6º ano": true,
+"Interpretação 7º ano": true,
+"Interpretação 8º ano": false,
+"Interpretação 9º ano": false
+}
+
+}
+
+// ==========================
+// REFERÊNCIAS DE ELEMENTOS HTML
+// ==========================
+const loginDiv=document.getElementById("login")
+const menuDiv=document.getElementById("menu")
+const quizDiv=document.getElementById("quiz")
+const btnEntrar=document.getElementById("btnEntrar")
+const btnConfirmar=document.getElementById("btnConfirmar")
+const btnProxima=document.getElementById("btnProxima")
+const btnVoltar=document.getElementById("btnVoltar")
+
+// ==========================
+// EVENTOS DOS BOTÕES
+// ==========================
+btnEntrar.addEventListener("click", entrar)
+btnConfirmar.addEventListener("click", confirmarResposta)
+btnProxima.addEventListener("click", proxima)
+btnVoltar.addEventListener("click", voltarMenu)
+
+
+// ==========================
+// FUNÇÃO ENTRAR
+// ==========================
+function entrar(){
+  let nome=document.getElementById("nomeUsuario").value.trim()
+  if(nome===""){alert("Digite seu nome"); return}
+  usuario=nome
+  localStorage.setItem("usuario-" + QUIZ_ID, nome)
+  loginDiv.style.display="none"
+  menuDiv.style.display="block"
+  criarMenuMaterias()
+}
+
+
+// ==========================
+// CRIAR MENU DE MATÉRIAS
+// ==========================
+function criarMenuMaterias(){
+  menuDiv.innerHTML = "<h1>Quiz de Português</h1><h2>Olá " + usuario + "</h2><h2>Escolha a matéria</h2>"
+  let materias = [...new Set(banco.map(p => p.materia))]
+
+  materias.forEach(m => {
+    let botao = document.createElement("div")
+    botao.className = "temaBtn"
+
+    // Calcular progresso total da matéria (incluindo assuntos concluídos)
+    let totalQuestoesMateria = banco.filter(p => p.materia === m).length
+    let acertosUsuario = 0
+    let assuntosDaMateria = [...new Set(banco.filter(p => p.materia === m).map(p => p.assunto))]
+
+    assuntosDaMateria.forEach(a => {
+      let chave = QUIZ_ID + "-" + m + "-" + a
+      let salvo = localStorage.getItem(chave)
+
+      // Somar acertos salvos
+      if (salvo) {
+        let dados = JSON.parse(salvo)
+        acertosUsuario += dados.acertos || 0
+      }
+
+
+
+      // Somar assuntos concluídos manualmente
+      if (assuntosConcluidos[m] && assuntosConcluidos[m][a]) {
+        let totalQuestoesAssunto = banco.filter(p => p.materia === m && p.assunto === a).length
+        acertosUsuario += totalQuestoesAssunto
+      }
+    })
+
+    let porcentagem = (totalQuestoesMateria > 0) ? (acertosUsuario / totalQuestoesMateria) * 100 : 0
+    botao.title = "Você acertou " + acertosUsuario + " de " + totalQuestoesMateria + " questões desta matéria"
+
+    botao.innerHTML =
+      "<div style='font-size:22px'>" + m + "</div>" +
+      "<div style='font-size:16px;opacity:0.8'>Progresso: " + acertosUsuario + " de " + totalQuestoesMateria + " questões corretas</div>" +
+      "<div class='progressoAssunto'><div class='barraInterna' style='width:" + porcentagem + "%'></div></div>"
+
+    botao.onclick = function() {
+      materiaSelecionada = m
+      Array.from(document.querySelectorAll(".temaBtn")).forEach(b => b.classList.remove("selecionadaMenu"))
+      botao.classList.add("selecionadaMenu")
+    }
+
+    menuDiv.appendChild(botao)
+  })
+
+  // Botão confirmar matéria
+  let confirmar = document.createElement("button")
+  confirmar.innerText = "Confirmar matéria"
+  confirmar.onclick = function() {
+    if (!materiaSelecionada) {
+      alert("Selecione uma matéria")
+      return
+    }
+    criarMenuAssuntos(materiaSelecionada)
+  }
+  menuDiv.appendChild(confirmar)
+
+  // Botão zerar progresso
+  let zerarUsuarioBtn=document.createElement("button")
+  zerarUsuarioBtn.innerText="Zerar usuário"
+  zerarUsuarioBtn.onclick=function(){
+    if(confirm("ATENÇÃO: você perderá o nome e todo o progresso deste quiz e terá que se registrar novamente. Deseja continuar?")){
+      for(let key in localStorage){
+        if(key.startsWith(QUIZ_ID + "-") || key === "usuario-" + QUIZ_ID){
+          localStorage.removeItem(key)
+        }
+      }
+      usuario=""
+      menuDiv.style.display="none"
+      loginDiv.style.display="block"
+      document.getElementById("nomeUsuario").value=""
+    }
+  }
+  menuDiv.appendChild(zerarUsuarioBtn)
+}
+
+
+// ==========================
+// CRIAR MENU DE ASSUNTOS
+// ==========================
+function criarMenuAssuntos(materia){
+  menuDiv.innerHTML="<h1>Quiz de Português</h1><h2>"+materia+"</h2><p>Escolha o assunto</p>"
+  let assuntos=[...new Set(banco.filter(p=>p.materia===materia).map(p=>p.assunto))]
+
+  assuntos.forEach(a=>{
+    let botao=document.createElement("div")
+    botao.className="temaBtn"
+
+    let chave=QUIZ_ID + "-" + materia + "-" + a
+    let salvo=localStorage.getItem(chave)
+if (assuntosConcluidos[materia] && assuntosConcluidos[materia][a]) {
+  localStorage.removeItem(chave)
+}
+
+    let totalQuestoes=banco.filter(p=>p.materia===materia && p.assunto===a).length
+    let respondidas=0
+    let acertos=0
+    let porcentagem=0
+    let progressoTexto="Respondidas: 0 de "+totalQuestoes+" | Acertos: 0"
+
+    if(salvo){
+      let dados=JSON.parse(salvo)
+      acertos=dados.acertos || 0
+      respondidas=dados.respondidasLista ? dados.respondidasLista.length : 0
+      porcentagem=(acertos/totalQuestoes)*100
+      progressoTexto="Respondidas: "+respondidas+" de "+totalQuestoes+" | Acertos: "+acertos
+    }
+
+
+
+
+    // MARCAR ASSUNTO CONCLUÍDO
+
+if (assuntosConcluidos[materia] && assuntosConcluidos[materia][a]) {
+  porcentagem = 100
+  progressoTexto = "Respondidas: " + totalQuestoes + " de " + totalQuestoes + " | Acertos: " + totalQuestoes
+}
+
+
+
+
+    botao.innerHTML=
+      "<div style='font-size:22px'>"+a+"</div>"+
+      "<div style='font-size:16px;opacity:0.8'>"+progressoTexto+"</div>"+
+      "<div class='progressoAssunto'><div class='barraInterna' style='width:"+porcentagem+"%'></div></div>"
+
+    botao.onclick=function(){
+
+if (assuntosConcluidos[materia] && assuntosConcluidos[materia][a]) {
+  alert("Este assunto já foi concluído.")
+  return
+}
+      assuntoSelecionado=a
+      Array.from(document.querySelectorAll(".temaBtn")).forEach(b=>b.classList.remove("selecionadaMenu"))
+      botao.classList.add("selecionadaMenu")
+    }
+
+    menuDiv.appendChild(botao)
+  })
+
+  // Botão iniciar quiz
+  let iniciar=document.createElement("button")
+  iniciar.innerText="Iniciar Quiz de Português"
+  iniciar.onclick=function(){
+    if(!assuntoSelecionado){alert("Selecione um assunto");return}
+    iniciarQuiz(materiaSelecionada,assuntoSelecionado)
+  }
+  menuDiv.appendChild(iniciar)
+
+  // Botão voltar
+  let voltar=document.createElement("button")
+  voltar.innerText="Voltar para matérias"
+  voltar.onclick=function(){criarMenuMaterias()}
+  menuDiv.appendChild(voltar)
+}
+
+
+// ==========================
+// FUNÇÕES DE QUIZ
+// ==========================
+function iniciarQuiz(materia,assunto){
+  perguntas=banco.filter(p=>p.materia===materia && p.assunto===assunto)
+  atual=0
+  pontos=0
+  erros=[]
+  menuDiv.style.display="none"
+  quizDiv.style.display="block"
+  carregar()
+}
+
+function carregar(){
+  let p=perguntas[atual]
+  document.getElementById("pergunta").innerText=p.pergunta
+  document.getElementById("tema").innerText=p.materia+" → "+p.assunto
+
+  for(let i=0;i<4;i++){
+    let op=document.getElementById("op"+i)
+    op.innerText=p.opcoes[i]
+    op.className="opcao"
+    op.onclick=function(){
+      opcaoSelecionada=i
+      Array.from(document.querySelectorAll(".opcao")).forEach(o=>o.classList.remove("selecionada"))
+      op.classList.add("selecionada")
+    }
+  }
+
+  document.getElementById("placar").innerText="Pergunta "+(atual+1)+" de "+perguntas.length+" | Pontos: "+pontos
+  document.getElementById("progresso").style.width=(atual/perguntas.length*100)+"%"
+  document.getElementById("explicacao").innerText=""
+  btnConfirmar.style.display="block"
+  btnProxima.style.display="none"
+  respondido=false
+  opcaoSelecionada=null
+}
+
+function confirmarResposta(){
+  if(opcaoSelecionada==null){alert("Selecione uma opção");return}
+  responder(opcaoSelecionada)
+  btnConfirmar.style.display="none"
+  btnProxima.style.display="block"
+}
+
+
+
+
+function responder(i){
+  if(respondido) return
+  respondido = true
+  let p = perguntas[atual]
+  let correta = p.correta
+
+  if(i == correta){
+    document.getElementById("op"+i).classList.add("correta")
+    pontos++
+
+  } else {
+    document.getElementById("op"+i).classList.add("errada")
+    document.getElementById("op"+correta).classList.add("correta")
+    erros.push(atual+1)
+  }
+
+  document.getElementById("explicacao").innerText = "Explicação: " + p.explicacao
+
+  let chave = QUIZ_ID + "-" + materiaSelecionada + "-" + assuntoSelecionado
+  let progresso = localStorage.getItem(chave)
+    ? JSON.parse(localStorage.getItem(chave))
+    : {acertos:0, total:perguntas.length, questoesAcertadas:[], respondidasLista:[]}
+
+if(i == correta){
+  // Caso acerte
+  if(!progresso.questoesAcertadas.includes(atual)){
+    progresso.acertos++
+    progresso.questoesAcertadas.push(atual)
+  }
+} else {
+  // Caso erre
+  // Se a questão já estava marcada como acertada, remover o acerto
+  let index = progresso.questoesAcertadas.indexOf(atual)
+  if(index !== -1){
+    progresso.questoesAcertadas.splice(index,1) // remove da lista de acertadas
+    progresso.acertos-- // subtrai um ponto
+  }
+}
+
+// Registrar que a questão foi respondida
+if(!progresso.respondidasLista.includes(atual)){
+  progresso.respondidasLista.push(atual)
+}
+
+  localStorage.setItem(chave, JSON.stringify(progresso))
+}
+
+if (assuntosConcluidos[materiaSelecionada] && assuntosConcluidos[materiaSelecionada][assuntoSelecionado]) {
+  localStorage.removeItem(chave)
+}
+
+function proxima(){
+  atual++
+  if(atual>=perguntas.length){
+    let acertos=pontos
+    let total=perguntas.length
+    let errosTotal=total-acertos
+    let listaErros=(erros.length>0) ? "Questões erradas: " + erros.join(", ") : "Você não errou nenhuma questão!"
+    alert("Resultado finalAcertos: "+acertos+"Erros: "+errosTotal+listaErros+"Pressione OK para voltar ao menu")
+    quizDiv.style.display="none"
+    menuDiv.style.display="block"
+    criarMenuAssuntos(materiaSelecionada)
+    return
+  }
+  carregar()
+}
+
+function voltarMenu(){
+  quizDiv.style.display="none"
+  menuDiv.style.display="block"
+  criarMenuMaterias()
+}
+
+// ==========================
+// CARREGAR USUÁRIO SALVO
+// ==========================
+window.onload=function(){
+  let nomeSalvo = localStorage.getItem("usuario-" + QUIZ_ID)
+  if(nomeSalvo){
+    usuario=nomeSalvo
+    loginDiv.style.display="none"
+    menuDiv.style.display="block"
+    criarMenuMaterias()
+  }
+}
+
+if(!assuntosConcluidos[materiaSelecionada]){
+  assuntosConcluidos[materiaSelecionada] = {}
+}
+
+if(pontos >= perguntas.length){
+  assuntosConcluidos[materiaSelecionada][assuntoSelecionado] = true
+}
+
+</script>
+</body>
+</html>
